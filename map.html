@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>红轴 · 空间地图轴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{--red-deep:#8B0000;--red-main:#C0392B;--red-bright:#E74C3C;--gold:#D4AF37;--gold-light:#F0D060;--ink:#1A0A00;--paper:#FDF6E3}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--ink);color:var(--paper);font-family:'Noto Sans SC',sans-serif;overflow:hidden}
+header{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:linear-gradient(180deg,rgba(26,10,0,0.98) 0%,rgba(26,10,0,0.9) 100%);border-bottom:1px solid rgba(212,175,55,0.25);backdrop-filter:blur(12px)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo svg{width:32px;height:32px}
+.logo-text{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:900;color:var(--gold);letter-spacing:4px;text-shadow:0 0 20px rgba(212,175,55,0.5)}
+.logo-sub{font-size:11px;color:rgba(212,175,55,0.6);letter-spacing:2px;margin-top:2px}
+nav{display:flex;gap:8px}
+nav button{background:none;border:1px solid rgba(212,175,55,0.3);color:rgba(212,175,55,0.8);padding:6px 16px;border-radius:2px;font-family:'Noto Sans SC',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;letter-spacing:1px}
+nav button:hover,nav button.active{background:rgba(212,175,55,0.15);border-color:var(--gold);color:var(--gold)}
+nav button.contribute{background:var(--red-main);border-color:var(--red-main);color:#fff}
+nav button.contribute:hover{background:var(--red-bright);border-color:var(--red-bright)}
+.map-filters{background:rgba(26,10,0,0.97);border-bottom:1px solid rgba(139,0,0,0.3);padding:10px 40px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;z-index:499;position:relative}
+.filter-group{display:flex;align-items:center;gap:6px}
+.filter-label{font-size:11px;color:rgba(212,175,55,0.5);letter-spacing:2px}
+.filter-btn{padding:4px 14px;border:1px solid rgba(139,0,0,0.3);background:none;color:rgba(253,246,227,0.55);font-family:'Noto Sans SC',sans-serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all .2s;white-space:nowrap}
+.filter-btn.active,.filter-btn:hover{background:rgba(192,57,43,0.2);border-color:var(--red-main);color:var(--paper)}
+.filter-divider{width:1px;height:18px;background:rgba(139,0,0,0.25)}
+.search-box{display:flex;align-items:center;gap:8px;background:rgba(139,0,0,0.1);border:1px solid rgba(139,0,0,0.3);padding:5px 12px;border-radius:2px;margin-left:auto}
+.search-box input{background:none;border:none;outline:none;color:var(--paper);font-family:'Noto Sans SC',sans-serif;font-size:13px;width:180px;letter-spacing:1px}
+.search-box input::placeholder{color:rgba(253,246,227,0.3)}
+.main-layout{position:fixed;top:110px;left:0;right:0;bottom:0;display:flex}
+.province-sidebar{width:240px;flex-shrink:0;background:rgba(26,10,0,0.97);border-right:1px solid rgba(139,0,0,0.25);overflow-y:auto;padding:16px 0}
+.sidebar-title{font-size:11px;color:var(--gold);letter-spacing:3px;padding:0 16px 12px;border-bottom:1px solid rgba(139,0,0,0.2);margin-bottom:8px}
+.province-item{padding:9px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .15s;border-left:3px solid transparent}
+.province-item:hover{background:rgba(139,0,0,0.12)}
+.province-item.active{background:rgba(192,57,43,0.15);border-left-color:var(--red-main)}
+.province-name{font-size:13px;color:rgba(253,246,227,0.75);letter-spacing:1px}
+.province-item.active .province-name{color:var(--paper);font-weight:500}
+.province-count{font-size:11px;color:var(--gold);background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);padding:1px 7px;border-radius:10px;min-width:28px;text-align:center}
+.province-item.active .province-count{background:rgba(192,57,43,0.2);border-color:rgba(192,57,43,0.4);color:var(--red-bright)}
+#chart{width:100%;height:100%;background:#0D0500}
+.ctrl-stack{position:fixed;top:130px;right:20px;z-index:400;display:flex;flex-direction:column;gap:4px}
+.ctrl-btn{padding:8px 14px;background:rgba(26,10,0,0.92);border:1px solid rgba(192,57,43,0.4);color:var(--gold);font-family:'Noto Sans SC',sans-serif;font-size:12px;cursor:pointer;backdrop-filter:blur(8px);transition:all .2s;text-align:center;white-space:nowrap;display:block}
+.ctrl-btn:hover{background:rgba(192,57,43,0.25);border-color:var(--red-main);color:var(--paper)}
+.ctrl-btn.active{background:rgba(192,57,43,0.25);border-color:var(--red-main);color:var(--paper)}
+.ctrl-sep{height:1px;background:rgba(139,0,0,0.3);margin:4px 0}
+.map-legend{position:fixed;bottom:30px;left:260px;z-index:400;background:rgba(26,10,0,0.93);border:1px solid rgba(139,0,0,0.3);padding:14px 16px;backdrop-filter:blur(12px)}
+.legend-title{font-size:11px;color:var(--gold);letter-spacing:3px;margin-bottom:10px}
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;color:rgba(253,246,227,0.7);letter-spacing:1px;cursor:pointer;padding:2px;border-radius:2px;transition:background .15s}
+.legend-item:hover{background:rgba(139,0,0,0.12)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.map-stats{position:fixed;bottom:30px;right:20px;z-index:400;background:rgba(26,10,0,0.93);border:1px solid rgba(139,0,0,0.3);padding:12px 18px;backdrop-filter:blur(8px);display:flex;gap:20px}
+.stat{text-align:center}
+.stat-num{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:900;color:var(--red-main);display:block;line-height:1}
+.stat-label{font-size:10px;color:rgba(253,246,227,0.4);letter-spacing:2px;margin-top:4px;display:block}
+.info-panel{position:fixed;top:120px;right:20px;z-index:450;width:300px;max-height:calc(100vh - 180px);background:rgba(26,10,0,0.97);border:1px solid rgba(192,57,43,0.4);backdrop-filter:blur(16px);overflow-y:auto;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .3s;transform:translateX(110%);opacity:0;box-shadow:0 8px 40px rgba(0,0,0,0.6)}
+.info-panel.open{transform:translateX(0);opacity:1}
+.info-panel-header{padding:14px 18px;border-bottom:1px solid rgba(139,0,0,0.3);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(26,10,0,0.98);z-index:1}
+.info-panel-title{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--gold);letter-spacing:2px}
+.info-panel-close{background:none;border:1px solid rgba(139,0,0,0.3);color:rgba(253,246,227,0.4);width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .2s;border-radius:2px}
+.info-panel-close:hover{border-color:var(--red-main);color:var(--paper)}
+.info-body{padding:16px 18px}
+.info-year{font-size:11px;color:var(--red-main);letter-spacing:2px;margin-bottom:5px}
+.info-place{font-size:11px;color:rgba(212,175,55,0.5);letter-spacing:2px;margin-bottom:10px}
+.info-title{font-family:'Noto Serif SC',serif;font-size:17px;font-weight:700;color:var(--paper);letter-spacing:1px;line-height:1.4;margin-bottom:12px}
+.info-divider{height:1px;background:linear-gradient(90deg,var(--red-main),transparent);margin-bottom:12px}
+.info-desc{font-size:13px;color:rgba(253,246,227,0.7);line-height:1.9;letter-spacing:.5px}
+.info-quote{border-left:2px solid var(--red-main);padding:8px 14px;margin-top:14px;background:rgba(139,0,0,0.1);font-family:'Noto Serif SC',serif;font-style:italic;color:var(--gold-light);font-size:13px;line-height:1.7}
+.info-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px}
+.tag{font-size:10px;padding:2px 8px;border-radius:1px;letter-spacing:1px;border:1px solid}
+.tag-red{color:var(--red-bright);border-color:rgba(231,76,60,.4);background:rgba(231,76,60,.08)}
+.tag-gold{color:var(--gold);border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.08)}
+.tag-green{color:#27AE60;border-color:rgba(39,174,96,.4);background:rgba(39,174,96,.08)}
+.info-nearby-header{padding:10px 18px 6px;font-size:11px;color:rgba(212,175,55,.4);letter-spacing:2px;border-top:1px solid rgba(139,0,0,.2)}
+.nearby-item{padding:9px 18px;cursor:pointer;border-bottom:1px solid rgba(139,0,0,.08);transition:background .15s;display:flex;align-items:center;gap:10px}
+.nearby-item:hover{background:rgba(139,0,0,.12)}
+.nearby-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.nearby-name{font-size:13px;color:rgba(253,246,227,0.7);flex:1}
+.nearby-year{font-size:11px;color:var(--red-main);white-space:nowrap;letter-spacing:1px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--red-deep);border-radius:2px}
+@media(max-width:768px){header{padding:0 16px}nav button:not(.contribute){display:none}.map-filters{padding:8px 16px}.province-sidebar{display:none}.map-legend{bottom:80px;left:10px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none"><polygon points="16,2 19.5,12 30,12 21.5,18.5 24.5,29 16,23 7.5,29 10.5,18.5 2,12 12.5,12" fill="#C0392B" stroke="#D4AF37" stroke-width=".5"/></svg>
+    <div><div class="logo-text">红 轴</div><div class="logo-sub">中国红色历史空间坐标</div></div>
+  </div>
+  <nav>
+    <button onclick="window.location.href='index.html'">时间轴</button>
+    <button class="active">空间轴</button>
+    <button class="contribute" onclick="alert('投稿功能正在开发中，敬请期待！')">+ 投稿</button>
+  </nav>
+</header>
+
+<div class="map-filters">
+  <div class="filter-group">
+    <span class="filter-label">时期</span>
+    <button class="filter-btn active" data-filter="all" onclick="filterByEra(this,'all')">全部</button>
+    <button class="filter-btn" data-filter="建党" onclick="filterByEra(this,'建党')">建党</button>
+    <button class="filter-btn" data-filter="土地革命" onclick="filterByEra(this,'土地革命')">土地革命</button>
+    <button class="filter-btn" data-filter="抗战" onclick="filterByEra(this,'抗战')">抗战</button>
+    <button class="filter-btn" data-filter="解放" onclick="filterByEra(this,'解放')">解放</button>
+    <button class="filter-btn" data-filter="建设" onclick="filterByEra(this,'建设')">建国后</button>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">类型</span>
+    <button class="filter-btn active" data-type="all" onclick="filterByType(this,'all')">全部</button>
+    <button class="filter-btn" data-type="重大事件" onclick="filterByType(this,'重大事件')">重大事件</button>
+    <button class="filter-btn" data-type="根据地" onclick="filterByType(this,'根据地')">根据地</button>
+    <button class="filter-btn" data-type="纪念馆" onclick="filterByType(this,'纪念馆')">纪念馆</button>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">显示</span>
+    <button class="filter-btn active" id="btn-scatter" onclick="setView('scatter')">散点图</button>
+    <button class="filter-btn" id="btn-heatmap" onclick="setView('heatmap')">省份热度</button>
+    <button class="filter-btn" id="btn-route1" onclick="toggleRoute('changzheng')">长征路线</button>
+    <button class="filter-btn" id="btn-route2" onclick="toggleRoute('yanan')">延安路线</button>
+  </div>
+  <div class="search-box">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(253,246,227,0.4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="搜索地点、事件..." oninput="searchData(this.value)">
+  </div>
+</div>
+
+<div class="main-layout">
+  <div class="province-sidebar">
+    <div class="sidebar-title">GEO 省份分布</div>
+    <div id="provinceList"></div>
+  </div>
+  <div id="chart"></div>
+</div>
+
+<div class="ctrl-stack">
+  <button class="ctrl-btn active" id="ctrl-scatter" onclick="setView('scatter')">散点图</button>
+  <button class="ctrl-btn" id="ctrl-heatmap" onclick="setView('heatmap')">省份热度</button>
+  <div class="ctrl-sep"></div>
+  <button class="ctrl-btn" id="ctrl-cz" onclick="toggleRoute('changzheng')">长征路线</button>
+  <button class="ctrl-btn" id="ctrl-ya" onclick="toggleRoute('yanan')">延安路线</button>
+  <div class="ctrl-sep"></div>
+  <button class="ctrl-btn" onclick="resetView()">重置</button>
+</div>
+
+<div class="map-legend">
+  <div class="legend-title">图例</div>
+  <div class="legend-item" onclick="filterByType(document.querySelector('[data-type=重大事件]'),'重大事件')"><div class="legend-dot" style="background:#C0392B"></div><span>重大历史事件</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#D4AF37"></div><span>里程碑事件</span></div>
+  <div class="legend-item" onclick="filterByType(document.querySelector('[data-type=根据地]'),'根据地')"><div class="legend-dot" style="background:#27AE60"></div><span>革命根据地</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#5DADE2"></div><span>纪念馆/英雄</span></div>
+</div>
+
+<div class="map-stats">
+  <div class="stat"><span class="stat-num" id="statPlaces">0</span><span class="stat-label">地点</span></div>
+  <div class="stat"><span class="stat-num" id="statProvinces">0</span><span class="stat-label">省份</span></div>
+  <div class="stat"><span class="stat-num" id="statBases">0</span><span class="stat-label">圣地</span></div>
+</div>
+
+<div class="info-panel" id="infoPanel">
+  <div class="info-panel-header">
+    <span class="info-panel-title">GEO 红色坐标</span>
+    <button class="info-panel-close" onclick="closeInfoPanel()">X</button>
+  </div>
+  <div id="infoPanelContent"></div>
+</div>
+
+<script>
+// DATA
+const redData = [
+{id:1,lat:31.23,lng:121.47,name:"中共一大·上海",year:"1921",era:"建党",type:"重大事件",place:"上海",province:"上海",title:"中共一大",desc:"1921年7月23日，中共一大在上海秘密召开，宣告中国共产党正式成立。",quote:"中国共产党的成立，是中国历史上开天辟地的大事变。",color:"gold"},
+{id:2,lat:30.27,lng:120.15,name:"南湖红船",year:"1921",era:"建党",type:"重大事件",place:"浙江·嘉兴",province:"浙江",title:"南湖红船",desc:"中共一大最后一天的会议转移到浙江嘉兴南湖的一艘游船上完成。",quote:"革命声传画舫中，诞生共党庆工农。",color:"gold"},
+{id:3,lat:28.68,lng:115.86,name:"南昌起义总指挥部",year:"1927",era:"建党",type:"重大事件",place:"江西·南昌",province:"江西",title:"南昌起义",desc:"1927年8月1日，周恩来、贺龙、叶挺、朱德等领导南昌起义，打响武装反抗的第一枪。",quote:"枪杆子里面出政权。",color:"red"},
+{id:4,lat:27.80,lng:114.19,name:"井冈山革命根据地",year:"1927",era:"土地革命",type:"根据地",place:"江西·井冈山",province:"江西",title:"井冈山革命根据地",desc:"毛泽东创建的中国第一个农村革命根据地，开辟了农村包围城市的革命道路。",quote:"星星之火，可以燎原。",color:"green"},
+{id:5,lat:27.95,lng:112.79,name:"韶山·毛泽东故居",year:"1893",era:"土地革命",type:"纪念馆",place:"湖南·韶山",province:"湖南",title:"韶山故居",desc:"毛泽东诞生之地，是全国爱国主义教育示范基地。",color:"blue"},
+{id:6,lat:28.43,lng:105.99,name:"四渡赤水",year:"1935",era:"土地革命",type:"重大事件",place:"贵州·习水",province:"贵州",title:"四渡赤水",desc:"1935年，毛泽东指挥中央红军四渡赤水河，巧妙穿插于敌军重兵之间。",quote:"毛主席用兵真如神！",color:"red"},
+{id:7,lat:30.05,lng:102.05,name:"强渡大渡河",year:"1935",era:"土地革命",type:"重大事件",place:"四川·石棉",province:"四川",title:"强渡大渡河",desc:"1935年5月，红一团17名勇士强渡大渡河，为红军北上打开了胜利通道。",quote:"大渡桥横铁索寒。",color:"red"},
+{id:8,lat:29.59,lng:103.35,name:"飞夺泸定桥",year:"1935",era:"土地革命",type:"重大事件",place:"四川·泸定",province:"四川",title:"飞夺泸定桥",desc:"1935年5月29日，红四团22名勇士在铁索桥上冒死冲锋，夺取泸定桥。",quote:"红军都是钢铁汉，千锤百炼不怕难。",color:"red"},
+{id:9,lat:31.16,lng:97.17,name:"长征·翻越雪山",year:"1935",era:"土地革命",type:"重大事件",place:"四川·甘孜",province:"四川",title:"长征·雪山草地",desc:"中央红军长征途中翻越了夹金山等多座大雪山，穿过人迹罕至的松潘草地。",quote:"红军不怕远征难，万水千山只等闲。",color:"red"},
+{id:10,lat:36.60,lng:109.49,name:"延安革命圣地",year:"1935",era:"土地革命",type:"根据地",place:"陕西·延安",province:"陕西",title:"延安革命圣地",desc:"1935年至1948年，延安是中共中央所在地，被誉为革命圣地。",quote:"自己动手，丰衣足食。",color:"gold"},
+{id:11,lat:36.05,lng:109.46,name:"杨家岭革命旧址",year:"1938",era:"土地革命",type:"纪念馆",place:"陕西·延安",province:"陕西",title:"杨家岭",desc:"中共中央所在地，1945年中共七大在此召开。",color:"blue"},
+{id:12,lat:36.00,lng:109.42,name:"南泥湾",year:"1941",era:"土地革命",type:"纪念馆",place:"陕西·延安",province:"陕西",title:"南泥湾大生产运动",desc:"1941年，八路军359旅在南泥湾开展大生产运动，实现了自给自足。",quote:"又学习来又生产，三五九旅是模范。",color:"blue"},
+{id:13,lat:36.65,lng:108.95,name:"枣园革命旧址",year:"1939",era:"土地革命",type:"纪念馆",place:"陕西·延安",province:"陕西",title:"枣园",desc:"中共中央书记处旧址，毛泽东、周恩来等中央领导曾在此居住和工作。",color:"blue"},
+{id:14,lat:39.46,lng:113.87,name:"平型关大捷遗址",year:"1937",era:"抗战",type:"重大事件",place:"山西·灵丘",province:"山西",title:"平型关大捷",desc:"1937年9月25日，八路军115师在平型关伏击日军，歼敌千余人，是全面抗战以来的第一个大胜仗。",quote:"首战平型关，威名天下扬。",color:"red"},
+{id:15,lat:36.67,lng:111.51,name:"百团大战纪念馆",year:"1940",era:"抗战",type:"纪念馆",place:"山西·阳泉",province:"山西",title:"百团大战",desc:"1940年8月，八路军在华北发动百团大战，历时3个半月，歼敌2.5万余人。",quote:"百团大战，敌后战场显神威。",color:"blue"},
+{id:16,lat:39.90,lng:116.40,name:"中国人民抗日战争纪念馆",year:"1937",era:"抗战",type:"纪念馆",place:"北京·卢沟桥",province:"北京",title:"抗战纪念馆",desc:"坐落于北京卢沟桥畔，是全国唯一全面反映中国人民抗日战争历史的综合纪念馆。",color:"blue"},
+{id:17,lat:31.82,lng:116.46,name:"皖南事变发生地",year:"1941",era:"抗战",type:"重大事件",place:"安徽·泾县",province:"安徽",title:"皖南事变",desc:"1941年1月，新四军9000余人在安徽茂林遭国民党军围攻，激战七昼夜。",quote:"千古奇冤，江南一叶。",color:"red"},
+{id:18,lat:30.62,lng:114.31,name:"武汉会战",year:"1938",era:"抗战",type:"重大事件",place:"湖北·武汉",province:"湖北",title:"武汉会战",desc:"1938年6月至10月，中国军队在武汉地区与日军展开大会战，是抗战时期规模最大的一次战役。",color:"red"},
+{id:19,lat:34.27,lng:108.95,name:"八路军西安办事处",year:"1937",era:"抗战",type:"纪念馆",place:"陕西·西安",province:"陕西",title:"西安八办",desc:"1937年8月设立，是抗战时期我党在国民党统治区设立的重要公开机关。",color:"blue"},
+{id:20,lat:25.04,lng:102.71,name:"西南联大旧址",year:"1937",era:"抗战",type:"纪念馆",place:"云南·昆明",province:"云南",title:"西南联大",desc:"1937年，北京大学、清华大学、南开大学南迁昆明组建西南联大。",quote:"刚毅坚卓。",color:"blue"},
+{id:21,lat:23.15,lng:113.26,name:"黄埔军校旧址",year:"1924",era:"建党",type:"纪念馆",place:"广东·广州",province:"广东",title:"黄埔军校",desc:"1924年，孙中山在中国共产党和苏联帮助下创办黄埔军校。",color:"blue"},
+{id:22,lat:25.75,lng:110.30,name:"湘江战役",year:"1934",era:"土地革命",type:"重大事件",place:"广西·全州",province:"广西",title:"湘江战役",desc:"1934年11月，中央红军在广西全州与敌军激战，是长征中损失最惨重的一战。",quote:"三年不饮湘江水，十年不食湘江鱼。",color:"red"},
+{id:23,lat:35.87,lng:114.52,name:"台儿庄战役纪念馆",year:"1938",era:"抗战",type:"纪念馆",place:"山东·枣庄",province:"山东",title:"台儿庄战役",desc:"1938年3月至4月，中国军队在台儿庄与日军展开激战，歼敌万余人。",quote:"台儿庄大捷！",color:"blue"},
+{id:24,lat:36.22,lng:114.05,name:"129师纪念馆",year:"1937",era:"抗战",type:"纪念馆",place:"河北·邯郸",province:"河北",title:"129师纪念馆",desc:"八路军129师挺进太行山，创建了晋冀鲁豫抗日根据地。",color:"blue"},
+{id:25,lat:26.08,lng:119.30,name:"福建抗战遗址",year:"1941",era:"抗战",type:"纪念馆",place:"福建·福州",province:"福建",title:"福建抗战",desc:"福建抗日军民在闽浙赣边区开展游击战争，留下了大量抗战遗址。",color:"blue"},
+{id:26,lat:38.04,lng:114.51,name:"西柏坡纪念馆",year:"1948",era:"解放",type:"纪念馆",place:"河北·平山",province:"河北",title:"西柏坡",desc:"1948年5月至1949年3月，中共中央移驻西柏坡，在此指挥了三大战役。",quote:"新中国从这里走来。",color:"gold"},
+{id:27,lat:39.04,lng:117.20,name:"平津战役纪念馆",year:"1949",era:"解放",type:"纪念馆",place:"天津",province:"天津",title:"平津战役",desc:"1948年11月至1949年1月，东北野战军发起平津战役，解放了北平、天津等城市。",color:"blue"},
+{id:28,lat:39.91,lng:116.39,name:"天安门广场",year:"1949",era:"解放",type:"重大事件",place:"北京",province:"北京",title:"开国大典",desc:"1949年10月1日，毛泽东在天安门城楼上庄严宣告中华人民共和国中央人民政府成立。",quote:"中国人民站起来了！",color:"gold"},
+{id:29,lat:32.06,lng:118.80,name:"渡江战役纪念馆",year:"1949",era:"解放",type:"纪念馆",place:"江苏·南京",province:"江苏",title:"渡江战役",desc:"1949年4月，人民解放军发起渡江战役，迅速解放南京。",quote:"打过长江去，解放全中国！",color:"blue"},
+{id:30,lat:31.86,lng:117.28,name:"渡江第一船",year:"1949",era:"解放",type:"重大事件",place:"安徽·芜湖",province:"安徽",title:"渡江第一船",desc:"1949年4月20日，解放军第一船在安徽芜湖成功渡江，标志着渡江战役正式开始。",color:"red"},
+{id:31,lat:41.80,lng:123.43,name:"辽沈战役纪念馆",year:"1948",era:"解放",type:"纪念馆",place:"辽宁·锦州",province:"辽宁",title:"辽沈战役",desc:"1948年9月至11月，东北野战军发起辽沈战役，歼敌47万余人，解放东北全境。",color:"blue"},
+{id:32,lat:41.81,lng:86.16,name:"罗布泊·第一颗原子弹",year:"1964",era:"建设",type:"重大事件",place:"新疆·罗布泊",province:"新疆",title:"第一颗原子弹",desc:"1964年10月16日，中国第一颗原子弹在新疆罗布泊爆炸成功，打破了超级大国的核垄断。",quote:"东方巨响，震惊世界。",color:"red"},
+{id:33,lat:36.65,lng:101.78,name:"两弹一星·金银滩",year:"1964",era:"建设",type:"纪念馆",place:"青海·海晏",province:"青海",title:"两弹一星基地",desc:"位于青海省海晏县金银滩，是我国第一个核武器研制基地。",quote:"干惊天动地事，做隐姓埋名人。",color:"blue"},
+{id:34,lat:41.72,lng:123.43,name:"抗美援朝烈士陵园",year:"1950",era:"建设",type:"纪念馆",place:"辽宁·沈阳",province:"辽宁",title:"抗美援朝烈士陵园",desc:"安葬着黄继光、邱少云等志愿军烈士，是全国爱国主义教育示范基地。",quote:"青山处处埋忠骨。",color:"blue"},
+{id:35,lat:30.57,lng:114.27,name:"98抗洪纪念馆",year:"1998",era:"建设",type:"纪念馆",place:"湖北·武汉",province:"湖北",title:"98抗洪",desc:"1998年长江特大洪水中，人民解放军奋勇抗洪，铸就了万众一心的抗洪精神。",color:"blue"},
+{id:36,lat:22.82,lng:108.37,name:"边境自卫反击战",year:"1979",era:"建设",type:"重大事件",place:"广西·凭祥",province:"广西",title:"边境自卫反击战",desc:"1979年，中国边防部队对侵犯边境的敌军进行自卫反击作战，保卫了祖国神圣领土。",color:"red"},
+{id:37,lat:22.54,lng:114.06,name:"深圳经济特区",year:"1980",era:"建设",type:"重大事件",place:"广东·深圳",province:"广东",title:"深圳特区",desc:"1980年8月，深圳经济特区正式成立，成为中国改革开放的重要窗口。",quote:"春天的故事。",color:"gold"},
+{id:38,lat:31.83,lng:117.21,name:"小岗村",year:"1978",era:"建设",type:"重大事件",place:"安徽·凤阳",province:"安徽",title:"小岗村大包干",desc:"1978年冬，小岗村18户农民秘密按下手印，实行大包干，拉开了中国农村改革的序幕。",quote:"大包干是农民的一个伟大创造。",color:"gold"},
+{id:39,lat:40.44,lng:116.57,name:"雄安新区",year:"2017",era:"建设",type:"重大事件",place:"河北·雄安",province:"河北",title:"雄安新区",desc:"2017年4月，决定设立河北雄安新区，是千年大计、国家大事。",color:"gold"},
+{id:40,lat:30.28,lng:120.16,name:"G20杭州峰会",year:"2016",era:"建设",type:"重大事件",place:"浙江·杭州",province:"浙江",title:"G20杭州峰会",desc:"2016年9月，G20峰会在杭州成功举办，彰显了中国在国际舞台上的大国地位。",quote:"弄潮儿向涛头立。",color:"red"},
+{id:41,lat:39.91,lng:116.39,name:"北京冬奥会",year:"2022",era:"建设",type:"重大事件",place:"北京",province:"北京",title:"北京冬奥会",desc:"2022年，北京成为世界上首个举办过夏季和冬季奥运会的城市。",quote:"一起向未来！",color:"gold"},
+{id:42,lat:24.48,lng:118.10,name:"厦门经济特区",year:"1980",era:"建设",type:"重大事件",place:"福建·厦门",province:"福建",title:"厦门特区",desc:"1980年，厦门经济特区建立，成为中国对外开放的重要窗口。",color:"gold"},
+{id:43,lat:22.33,lng:114.17,name:"港珠澳大桥",year:"2018",era:"建设",type:"重大事件",place:"广东·珠海",province:"广东",title:"港珠澳大桥",desc:"2018年10月，港珠澳大桥正式开通，是世界上最长的跨海大桥。",quote:"超级工程，民族骄傲。",color:"gold"},
+{id:44,lat:25.04,lng:121.56,name:"台湾光复",year:"1945",era:"解放",type:"重大事件",place:"台湾·台北",province:"台湾",title:"台湾光复",desc:"1945年日本战败投降，台湾回归祖国怀抱，洗雪了五十年民族之耻辱。",quote:"还我河山！",color:"red"},
+];
+
+const provinceCenters = {
+"北京":[39.91,116.39],"上海":[31.23,121.47],"天津":[39.13,117.20],"重庆":[29.56,106.55],
+"河北":[38.04,114.51],"山西":[37.86,112.55],"辽宁":[41.80,123.43],"吉林":[43.89,125.32],
+"黑龙江":[47.86,127.77],"江苏":[32.06,118.80],"浙江":[30.28,120.16],"安徽":[31.83,117.21],
+"福建":[26.08,118.30],"江西":[28.68,115.86],"山东":[36.65,117.00],"河南":[34.77,113.75],
+"湖北":[30.58,114.31],"湖南":[28.23,112.94],"广东":[23.15,113.26],"海南":[19.57,109.78],
+"四川":[30.58,104.07],"贵州":[26.60,106.71],"云南":[25.04,102.71],"陕西":[37.20,109.50],
+"甘肃":[37.80,101.77],"青海":[36.62,101.78],"内蒙古":[44.10,111.67],"广西":[25.28,108.90],
+"西藏":[31.14,88.14],"宁夏":[37.20,106.27],"新疆":[41.81,86.16],"台湾":[25.04,121.56],
+};
+
+const colorMap = {red:'#C0392B',gold:'#D4AF37',green:'#27AE60',blue:'#5DADE2'};
+
+// ECharts init
+var chartDom = document.getElementById('chart');
+var myChart = echarts.init(chartDom);
+var mapLoaded = false;
+
+let currentView = 'scatter';
+let currentEra = 'all';
+let currentType = 'all';
+let currentSearch = '';
+let activeRoutes = [];
+
+function getFilteredData() {
+  return redData.filter(d => {
+    const eraOk = currentEra === 'all' || d.era === currentEra;
+    const typeOk = currentType === 'all' || d.type === currentType;
+    const searchOk = !currentSearch || d.name.toLowerCase().includes(currentSearch.toLowerCase()) || d.title.toLowerCase().includes(currentSearch.toLowerCase()) || d.place.toLowerCase().includes(currentSearch.toLowerCase());
+    return eraOk && typeOk && searchOk;
+  });
+}
+
+function buildOption() {
+  const filtered = getFilteredData();
+
+  const scatterData = filtered.map(d => ({
+    name: d.name,
+    value: [d.lng, d.lat],
+    id: d.id,
+    itemStyle: { color: colorMap[d.color] || '#C0392B' },
+  }));
+
+  const heatData = {};
+  filtered.forEach(d => { heatData[d.province] = (heatData[d.province] || 0) + 1; });
+
+  const routeMap = {
+    changzheng: { name:'长征路线', color:'#E74C3C', points:[[121.47,31.23],[120.15,30.27],[105.99,28.43],[102.05,30.05],[103.35,29.59],[97.17,31.16],[109.49,36.60]] },
+    yanan: { name:'延安之路', color:'#D4AF37', points:[[115.86,27.80],[116.46,31.82],[109.49,36.60]] },
+  };
+
+  let series = [];
+
+  if (currentView === 'scatter') {
+    // Province background labels
+    series.push({
+      name: '省份标注',
+      type: 'scatter',
+      coordinateSystem: 'geo',
+      data: Object.entries(heatData).map(([name, val]) => ({
+        name, value: [provinceCenters[name]?.[1]||0, provinceCenters[name]?.[0]||0, val],
+      })),
+      symbolSize: function(val) { return Math.max(8, Math.min(22, val[2] * 4)); },
+      label: { show: true, formatter: '{b}', position: 'inside', fontSize: 9, color: 'rgba(253,246,227,0.6)', fontFamily: 'Noto Sans SC' },
+      itemStyle: { color: 'rgba(192,57,43,0.15)', borderColor: 'rgba(192,57,43,0.3)', borderWidth: 1 },
+      silent: true,
+      zlevel: 1,
+    });
+    // Main scatter
+    series.push({
+      name: '红色坐标',
+      type: 'effectScatter',
+      coordinateSystem: 'geo',
+      data: scatterData,
+      symbolSize: 12,
+      showEffectOn: 'render',
+      rippleEffect: { brushType: 'stroke', scale: 4 },
+      label: { formatter: '{b}', position: 'right', show: false, fontSize: 11, color: '#FDF6E3', fontFamily: 'Noto Sans SC' },
+      itemStyle: { shadowBlur: 10, shadowColor: 'rgba(192,57,43,0.5)' },
+      emphasis: { scale: true, label: { show: true, formatter: '{b}', position: 'top', fontSize: 12, color: '#D4AF37' } },
+      zlevel: 3,
+    });
+  } else {
+    // Heatmap view - show map
+    series.push({
+      name: '省份热度',
+      type: 'map',
+      map: 'China',
+      roam: true,
+      zoom: 1.2,
+      center: [105, 36],
+      itemStyle: { areaColor: '#1A0A00', borderColor: 'rgba(139,0,0,0.4)', borderWidth: 1 },
+      emphasis: {
+        itemStyle: { areaColor: '#C0392B', shadowBlur: 20, shadowColor: 'rgba(192,57,43,0.8)' },
+        label: { show: true, color: '#fff', fontFamily: 'Noto Sans SC', fontSize: 13 }
+      },
+      select: { disabled: true },
+      data: Object.entries(heatData).map(([name, val]) => ({ name, value: val })),
+      zlevel: 1,
+    });
+    series.push({
+      name: '热点',
+      type: 'effectScatter',
+      coordinateSystem: 'geo',
+      data: scatterData,
+      symbolSize: 10,
+      showEffectOn: 'render',
+      rippleEffect: { brushType: 'stroke', scale: 3 },
+      itemStyle: { color: '#FF6B6B', shadowBlur: 8, shadowColor: 'rgba(255,107,107,0.6)' },
+      label: { formatter: '{b}', position: 'right', show: false, fontSize: 10, color: '#FF6B6B', fontFamily: 'Noto Sans SC' },
+      emphasis: { scale: true, label: { show: true, formatter: '{b}', position: 'top', fontSize: 12, color: '#FF6B6B' } },
+      zlevel: 3,
+    });
+  }
+
+  // Routes
+  activeRoutes.forEach(key => {
+    const r = routeMap[key];
+    if (r) {
+      series.push({
+        name: r.name, type: 'lines', coordinateSystem: 'geo',
+        polyline: true,
+        data: [{ coords: r.points.map(p => [p[0], p[1]]) }],
+        lineStyle: { color: r.color, width: 3, opacity: 0.8, curveness: 0.1 },
+        effect: { show: true, period: 6, trailLength: 0.4, symbol: 'circle', symbolSize: 5, color: r.color },
+        zlevel: 4,
+      });
+    }
+  });
+
+  return {
+    backgroundColor: '#0D0500',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(26,10,0,0.96)',
+      borderColor: 'rgba(192,57,43,0.5)',
+      borderWidth: 1,
+      textStyle: { color: '#FDF6E3', fontFamily: 'Noto Sans SC', fontSize: 13 },
+      formatter: function(p) {
+        if (p.seriesType === 'effectScatter' || p.seriesType === 'scatter') {
+          const d = redData.find(x => x.name === p.name);
+          if (d) return '<div style="font-family:serif;font-size:15px;font-weight:700;color:#FDF6E3">' + d.title + '</div><div style="color:#C0392B;font-size:11px;margin:4px 0">' + d.year + ' · ' + d.era + '</div><div style="color:rgba(212,175,55,0.7);font-size:11px">GEO ' + d.place + '</div>';
+          if (p.name && provinceCenters[p.name]) return '<div style="font-size:13px;color:#FDF6E3">' + p.name + '：<strong style="color:#D4AF37;font-size:16px">' + (p.value?.[2] || 0) + '</strong> 个红色坐标</div>';
+        }
+        if (p.seriesType === 'map') return '<div style="font-size:13px;color:#FDF6E3">' + p.name + '：<strong style="color:#D4AF37">' + (p.value || 0) + '</strong> 个红色坐标</div>';
+        return '';
+      }
+    },
+    geo: {
+      map: 'China',
+      roam: true,
+      zoom: 1.2,
+      center: [105, 36],
+      itemStyle: { areaColor: '#1A0A00', borderColor: 'rgba(139,0,0,0.35)', borderWidth: 1 },
+      emphasis: { itemStyle: { areaColor: 'rgba(192,57,43,0.3)', borderColor: '#C0392B', borderWidth: 1.5 }, label: { show: false } },
+      select: { disabled: true },
+      silent: currentView === 'heatmap',
+    },
+    series,
+    animation: true,
+  };
+}
+
+function loadMap() {
+  // Use Aliyun GeoJSON - free, reliable China province boundaries
+  fetch('https://geo.datav.aliyun.com/areas_v3/bound/chn.json')
+    .then(r => r.json())
+    .then(chinaGeo => {
+      echarts.registerMap('China', chinaGeo);
+      mapLoaded = true;
+      myChart.setOption(buildOption());
+      myChart.on('click', function(params) {
+        const d = redData.find(x => x.name === params.name);
+        if (d) openInfoPanel(d);
+        else if (params.name && provinceCenters[params.name] && params.componentType !== 'geo') {
+          showProvinceDetail(params.name);
+        }
+      });
+    })
+    .catch(err => {
+      console.error('Map load failed:', err);
+      mapLoaded = false;
+      // Fallback without map
+      myChart.setOption({
+        backgroundColor: '#0D0500',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(26,10,0,0.96)', borderColor: 'rgba(192,57,43,0.5)', textStyle: { color: '#FDF6E3', fontFamily: 'Noto Sans SC' } },
+        grid: { left: 60, right: 40, top: 40, bottom: 60 },
+        xAxis: { type: 'value', min: 73, max: 135, axisLine: { lineStyle: { color: 'rgba(139,0,0,0.3)' } }, axisLabel: { color: 'rgba(253,246,227,0.3)', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(139,0,0,0.08)' } } },
+        yAxis: { type: 'value', min: 18, max: 54, axisLine: { lineStyle: { color: 'rgba(139,0,0,0.3)' } }, axisLabel: { color: 'rgba(253,246,227,0.3)', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(139,0,0,0.08)' } } },
+        series: [{
+          type: 'effectScatter',
+          data: getFilteredData().map(d => ({ name: d.name, value: [d.lng, d.lat], id: d.id, itemStyle: { color: colorMap[d.color] } })),
+          symbolSize: 12,
+          showEffectOn: 'render',
+          rippleEffect: { brushType: 'stroke', scale: 4 },
+          label: { formatter: '{b}', position: 'right', show: false, color: '#FDF6E3', fontFamily: 'Noto Sans SC' },
+          emphasis: { scale: true, label: { show: true } },
+        }],
+      });
+      myChart.on('click', function(params) {
+        const d = redData.find(x => x.name === params.name);
+        if (d) openInfoPanel(d);
+      });
+    });
+}
+
+function updateChart() {
+  myChart.setOption(buildOption(), { notMerge: false });
+  updateStats();
+  buildProvinceList();
+}
+
+// Province sidebar
+function buildProvinceList() {
+  const heat = {};
+  getFilteredData().forEach(d => { heat[d.province] = (heat[d.province] || 0) + 1; });
+  const sorted = Object.entries(heat).sort((a, b) => b[1] - a[1]);
+  const el = document.getElementById('provinceList');
+  if (sorted.length === 0) {
+    el.innerHTML = '<div style="padding:20px 16px;text-align:center;color:rgba(253,246,227,0.3);font-size:12px;letter-spacing:2px">暂无数据</div>';
+    return;
+  }
+  el.innerHTML = sorted.map(([name, count]) =>
+    '<div class="province-item" onclick="showProvinceDetail(\'' + name + '\')"><span class="province-name">' + name + '</span><span class="province-count">' + count + '</span></div>'
+  ).join('');
+}
+
+function showProvinceDetail(province) {
+  const items = getFilteredData().filter(d => d.province === province);
+  if (!items.length) return;
+  document.querySelectorAll('.province-item').forEach(e => e.classList.remove('active'));
+  var target = Array.from(document.querySelectorAll('.province-item')).find(e => e.querySelector('.province-name').textContent === province);
+  if (target) target.classList.add('active');
+  var existing = document.getElementById('provinceDetail');
+  if (existing) existing.remove();
+  var detail = document.createElement('div');
+  detail.id = 'provinceDetail';
+  detail.style.cssText = 'padding:16px;border-top:1px solid rgba(139,0,0,0.3);';
+  detail.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-family:serif;font-size:14px;color:var(--gold);letter-spacing:2px">' + province + '</span><button onclick="closeProvinceDetail()" style="background:none;border:1px solid rgba(139,0,0,0.3);color:rgba(253,246,227,0.4);width:22px;height:22px;cursor:pointer;font-size:10px;border-radius:2px">X</button></div><div style="font-size:11px;color:rgba(253,246,227,0.3);letter-spacing:2px;margin-bottom:12px">共 ' + items.length + ' 个红色坐标</div>' +
+    items.map(d => '<div class="nearby-item" onclick="openInfoPanel(redData.find(x=>x.id===' + d.id + '))"><div class="nearby-dot" style="background:' + (colorMap[d.color]||'#C0392B') + '"></div><div class="nearby-name">' + d.name + '</div><div class="nearby-year">' + d.year + '</div></div>').join('');
+  document.getElementById('provinceList').after(detail);
+}
+
+function closeProvinceDetail() {
+  var d = document.getElementById('provinceDetail');
+  if (d) d.remove();
+  document.querySelectorAll('.province-item').forEach(e => e.classList.remove('active'));
+}
+
+// Filters
+function filterByEra(btn, era) {
+  document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentEra = era;
+  updateChart();
+}
+
+function filterByType(btn, type) {
+  document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentType = type;
+  updateChart();
+}
+
+function searchData(q) {
+  currentSearch = q;
+  updateChart();
+}
+
+function setView(view) {
+  currentView = view;
+  document.getElementById('btn-scatter').classList.toggle('active', view === 'scatter');
+  document.getElementById('btn-heatmap').classList.toggle('active', view === 'heatmap');
+  document.getElementById('ctrl-scatter').classList.toggle('active', view === 'scatter');
+  document.getElementById('ctrl-heatmap').classList.toggle('active', view === 'heatmap');
+  updateChart();
+}
+
+function toggleRoute(key) {
+  var idx = activeRoutes.indexOf(key);
+  if (idx >= 0) activeRoutes.splice(idx, 1);
+  else activeRoutes.push(key);
+  document.getElementById('ctrl-cz') && document.getElementById('ctrl-cz').classList.toggle('active', activeRoutes.includes('changzheng'));
+  document.getElementById('ctrl-ya') && document.getElementById('ctrl-ya').classList.toggle('active', activeRoutes.includes('yanan'));
+  document.getElementById('btn-route1') && document.getElementById('btn-route1').classList.toggle('active', activeRoutes.includes('changzheng'));
+  document.getElementById('btn-route2') && document.getElementById('btn-route2').classList.toggle('active', activeRoutes.includes('yanan'));
+  updateChart();
+}
+
+function resetView() {
+  currentEra = 'all'; currentType = 'all'; currentSearch = ''; currentView = 'scatter'; activeRoutes = [];
+  document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+  document.querySelectorAll('[data-type]').forEach(b => b.classList.toggle('active', b.dataset.type === 'all'));
+  document.getElementById('searchInput').value = '';
+  setView('scatter');
+  closeInfoPanel();
+  closeProvinceDetail();
+}
+
+function updateStats() {
+  var fd = getFilteredData();
+  var provs = new Set(fd.map(d => d.province));
+  document.getElementById('statPlaces').textContent = fd.length;
+  document.getElementById('statProvinces').textContent = provs.size;
+  document.getElementById('statBases').textContent = fd.filter(d => d.type === '根据地').length;
+}
+
+// Info panel
+function openInfoPanel(item) {
+  if (!item) return;
+  var nearby = redData.filter(d => d.id !== item.id).map(d => ({...d, dist: Math.hypot(d.lat - item.lat, d.lng - item.lng)})).sort((a, b) => a.dist - b.dist).slice(0, 6);
+  document.getElementById('infoPanelContent').innerHTML =
+    '<div class="info-body"><div class="info-year">' + item.year + '年 · ' + item.era + '</div><div class="info-place">GEO ' + item.place + '</div><div class="info-title">' + item.title + '</div><div class="info-divider"></div><div class="info-desc">' + item.desc + '</div>' +
+    (item.quote ? '<div class="info-quote">"' + item.quote + '"</div>' : '') +
+    '<div class="info-tags"><span class="tag tag-red">' + item.era + '</span><span class="tag tag-gold">' + item.type + '</span><span class="tag tag-green">' + item.province + '</span></div></div>' +
+    '<div class="info-nearby-header">GEO 附近其他地点</div>' +
+    nearby.map(n => '<div class="nearby-item" onclick="openInfoPanel(redData.find(x=>x.id===' + n.id + '))"><div class="nearby-dot" style="background:' + (colorMap[n.color]||'#C0392B') + '"></div><div class="nearby-name">' + n.name + '</div><div class="nearby-year">' + n.year + '</div></div>').join('');
+  document.getElementById('infoPanel').classList.add('open');
+}
+
+function closeInfoPanel() { document.getElementById('infoPanel').classList.remove('open'); }
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeInfoPanel(); closeProvinceDetail(); } });
+window.addEventListener('resize', function() { myChart.resize(); });
+
+// Init
+loadMap();
+buildProvinceList();
+updateStats();
+</script>
+</body>
+</html>

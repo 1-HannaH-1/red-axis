@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>红轴 · 中国红色历史时空坐标</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+:root{--red-deep:#8B0000;--red-main:#C0392B;--red-bright:#E74C3C;--gold:#D4AF37;--gold-light:#F0D060;--ink:#1A0A00;--paper:#FDF6E3}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--ink);color:var(--paper);font-family:'Noto Sans SC',sans-serif}
+a{text-decoration:none;color:inherit}
+
+/* ── HEADER ── */
+header{position:fixed;top:0;left:0;right:0;z-index:500;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;background:linear-gradient(180deg,rgba(26,10,0,0.98) 0%,rgba(26,10,0,0.92) 100%);border-bottom:1px solid rgba(212,175,55,0.2);backdrop-filter:blur(14px)}
+.logo{display:flex;align-items:center;gap:12px;cursor:pointer}
+.logo svg{width:30px;height:30px;flex-shrink:0}
+.logo-text{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:900;color:var(--gold);letter-spacing:4px;text-shadow:0 0 20px rgba(212,175,55,0.4)}
+.logo-sub{font-size:10px;color:rgba(212,175,55,0.5);letter-spacing:2px;margin-top:1px}
+
+/* Tab nav */
+.tab-nav{display:flex;gap:2px;background:rgba(139,0,0,0.1);padding:3px;border-radius:3px;border:1px solid rgba(139,0,0,0.2)}
+.tab-btn{background:none;border:none;color:rgba(253,246,227,0.5);padding:6px 20px;font-family:'Noto Sans SC',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;border-radius:2px;letter-spacing:1px}
+.tab-btn:hover{color:rgba(253,246,227,0.8)}
+.tab-btn.active{background:rgba(192,57,43,0.3);color:var(--paper);font-weight:500}
+
+/* Right nav */
+.nav-right{display:flex;align-items:center;gap:8px}
+.stat-pill{display:flex;align-items:center;gap:16px;padding:0 16px}
+.stat-pill span{font-size:12px;color:rgba(253,246,227,0.5);letter-spacing:1px}
+.stat-pill strong{color:var(--gold);font-weight:600}
+.btn-contribute{background:var(--red-main);border:none;color:#fff;padding:7px 18px;font-family:'Noto Sans SC',sans-serif;font-size:13px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:background .2s}
+.btn-contribute:hover{background:var(--red-bright)}
+
+/* ── MAIN CONTAINER ── */
+.main{position:fixed;top:64px;left:0;right:0;bottom:0;overflow:hidden}
+
+/* ── TIMELINE VIEW ── */
+.timeline-view{height:100%;display:flex;flex-direction:column;background:var(--ink)}
+.timeline-filters{background:rgba(26,10,0,0.97);padding:10px 40px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(139,0,0,0.2);flex-shrink:0}
+.f-label{font-size:11px;color:rgba(212,175,55,0.5);letter-spacing:2px;white-space:nowrap}
+.f-btn{padding:4px 14px;border:1px solid rgba(139,0,0,0.3);background:none;color:rgba(253,246,227,0.55);font-family:'Noto Sans SC',sans-serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all .2s;white-space:nowrap}
+.f-btn.active,.f-btn:hover{background:rgba(192,57,43,0.2);border-color:var(--red-main);color:var(--paper)}
+.f-divider{width:1px;height:16px;background:rgba(139,0,0,0.2)}
+.timeline-scroll{flex:1;overflow-x:auto;overflow-y:hidden;cursor:grab}
+.timeline-scroll:active{cursor:grabbing}
+.timeline-scroll::-webkit-scrollbar{height:3px}
+.timeline-scroll::-webkit-scrollbar-thumb{background:var(--red-deep)}
+.timeline-inner{position:relative;height:100%;min-width:3000px;padding:0 100px}
+
+/* Axis */
+.axis-line{position:absolute;left:0;right:0;top:50%;height:3px;background:linear-gradient(90deg,transparent 0%,var(--red-main) 5%,var(--red-main) 95%,transparent 100%);transform:translateY(-50%)}
+.axis-glow{position:absolute;left:0;right:0;top:50%;height:12px;background:linear-gradient(90deg,transparent 0%,rgba(192,57,43,0.15) 5%,rgba(192,57,43,0.15) 95%,transparent 100%);transform:translateY(-50%);pointer-events:none}
+
+/* Era labels */
+.era-labels{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none}
+.era-label{position:absolute;top:50%;transform:translateY(-50%);font-family:'Noto Serif SC',serif;font-size:11px;color:rgba(212,175,55,0.4);letter-spacing:3px;writing-mode:vertical-rl;white-space:nowrap}
+
+/* Events */
+.event-node{position:absolute;top:50%;transform:translateY(-50%);cursor:pointer}
+.event-node.top .event-card{top:auto;bottom:calc(100% + 20px)}
+.event-node.bottom .event-card{top:calc(100% + 20px)}
+.event-dot{width:14px;height:14px;border-radius:50%;background:var(--red-main);border:2px solid var(--ink);margin:0 auto;transition:all .2s;position:relative;z-index:2}
+.event-dot.gold{background:var(--gold)}
+.event-dot.blue{background:#5DADE2}
+.event-dot.green{background:#27AE60}
+.event-node:hover .event-dot{transform:scale(1.5);box-shadow:0 0 16px rgba(192,57,43,0.6)}
+.event-card{position:absolute;left:50%;transform:translateX(-50%);background:rgba(26,10,0,0.97);border:1px solid rgba(192,57,43,0.4);padding:14px 18px;min-width:220px;max-width:280px;backdrop-filter:blur(12px);transition:opacity .2s,transform .2s;opacity:0;pointer-events:none;z-index:10}
+.event-node:hover .event-card,
+  .event-node.active .event-card{opacity:1;pointer-events:auto}
+.event-year{font-size:11px;color:var(--red-main);letter-spacing:2px;margin-bottom:4px}
+.event-title{font-family:'Noto Serif SC',serif;font-size:15px;font-weight:700;color:var(--paper);line-height:1.4;margin-bottom:8px;letter-spacing:1px}
+.event-desc{font-size:12px;color:rgba(253,246,227,0.65);line-height:1.8;letter-spacing:.3px}
+.event-tag{display:inline-block;margin-top:10px;font-size:10px;padding:2px 8px;border:1px solid;border-radius:1px;letter-spacing:1px}
+.event-tag.era{color:var(--red-bright);border-color:rgba(231,76,60,0.4);background:rgba(231,76,60,0.08)}
+.event-tag.type{color:var(--gold);border-color:rgba(212,175,55,0.4);background:rgba(212,175,55,0.08)}
+.event-line{position:absolute;width:1px;background:linear-gradient(var(--red-main),transparent);left:50%;transform:translateX(-50%)}
+.event-node.top .event-line{bottom:calc(100% + 4px);top:-40px}
+.event-node.bottom .event-line{top:calc(100% + 4px);bottom:-40px}
+
+/* Year markers */
+.year-marker{position:absolute;top:calc(50% + 20px);transform:translateX(-50%);font-family:'Noto Serif SC',serif;font-size:10px;color:rgba(212,175,55,0.3);letter-spacing:2px;white-space:nowrap}
+
+/* Zoom controls */
+.zoom-controls{position:absolute;bottom:20px;right:20px;z-index:100;display:flex;gap:4px}
+.zoom-btn{width:36px;height:36px;background:rgba(26,10,0,0.9);border:1px solid rgba(192,57,43,0.4);color:var(--gold);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(8px)}
+.zoom-btn:hover{background:rgba(192,57,43,0.25);border-color:var(--red-main)}
+
+/* Timeline legend */
+.timeline-legend{position:absolute;bottom:20px;left:40px;z-index:100;display:flex;gap:16px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(253,246,227,0.5);letter-spacing:1px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Detail overlay */
+.detail-overlay{position:fixed;top:64px;left:0;right:0;bottom:0;z-index:200;background:rgba(26,10,0,0.97);overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(8px)}
+.detail-overlay.open{transform:translateY(0)}
+.detail-inner{max-width:700px;margin:0 auto;padding:40px 40px 80px}
+.detail-back{display:flex;align-items:center;gap:8px;color:rgba(212,175,55,0.7);font-size:13px;cursor:pointer;margin-bottom:30px;letter-spacing:1px;transition:color .2s}
+.detail-back:hover{color:var(--gold)}
+.detail-tabs{display:flex;gap:16px;margin-bottom:20px;border-bottom:1px solid rgba(139,0,0,0.2);padding-bottom:12px}
+.detail-tab{font-size:12px;color:rgba(212,175,55,0.5);cursor:pointer;letter-spacing:1px;transition:color .2s}
+.detail-tab:hover{color:var(--gold)}
+.detail-year{font-size:12px;color:var(--red-main);letter-spacing:3px;margin-bottom:6px}
+.detail-place{font-size:12px;color:rgba(212,175,55,0.5);letter-spacing:2px;margin-bottom:16px}
+.detail-title{font-family:'Noto Serif SC',serif;font-size:32px;font-weight:900;color:var(--paper);line-height:1.3;letter-spacing:2px;margin-bottom:20px}
+.detail-divider{height:2px;background:linear-gradient(90deg,var(--red-main),transparent);margin-bottom:24px}
+.detail-desc{font-size:15px;color:rgba(253,246,227,0.8);line-height:2;letter-spacing:.5px;margin-bottom:20px}
+.detail-quote{border-left:3px solid var(--red-main);padding:12px 20px;background:rgba(139,0,0,0.08);font-family:'Noto Serif SC',serif;font-style:italic;color:var(--gold-light);font-size:16px;line-height:1.8;margin:20px 0}
+.detail-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.detail-tag{padding:4px 14px;border-radius:2px;font-size:12px;letter-spacing:1px;border:1px solid}
+.detail-tag.r{color:var(--red-bright);border-color:rgba(231,76,60,0.4);background:rgba(231,76,60,0.08)}
+.detail-tag.g{color:var(--gold);border-color:rgba(212,175,55,0.4);background:rgba(212,175,55,0.08)}
+
+/* ── MAP VIEW ── */
+.map-view{height:100%;display:flex;flex-direction:column;background:var(--ink)}
+.map-filters{background:rgba(26,10,0,0.97);padding:10px 40px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(139,0,0,0.2);flex-shrink:0}
+.map-main{flex:1;display:flex;overflow:hidden}
+.province-sidebar{width:230px;flex-shrink:0;background:rgba(26,10,0,0.97);border-right:1px solid rgba(139,0,0,0.2);overflow-y:auto;padding:12px 0}
+.sb-title{font-size:11px;color:var(--gold);letter-spacing:3px;padding:0 14px 10px;border-bottom:1px solid rgba(139,0,0,0.2);margin-bottom:8px}
+.province-item{padding:8px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .15s;border-left:3px solid transparent}
+.province-item:hover{background:rgba(139,0,0,0.1)}
+.province-item.active{background:rgba(192,57,43,0.12);border-left-color:var(--red-main)}
+.province-name{font-size:12px;color:rgba(253,246,227,0.7);letter-spacing:1px}
+.province-item.active .province-name{color:var(--paper);font-weight:500}
+.province-count{font-size:10px;color:var(--gold);background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.25);padding:1px 6px;border-radius:8px}
+.province-item.active .province-count{background:rgba(192,57,43,0.15);border-color:rgba(192,57,43,0.35);color:var(--red-bright)}
+#chart{width:100%;height:100%;background:#0D0500}
+
+/* ── STORY VIEW ── */
+.story-view{height:100%;display:flex;flex-direction:column;background:var(--ink)}
+.story-header{background:linear-gradient(180deg,rgba(139,0,0,0.25) 0%,transparent 100%);border-bottom:1px solid rgba(139,0,0,0.2);padding:28px 40px 20px;flex-shrink:0}
+.story-header-inner{max-width:800px}
+.story-eyebrow{font-size:10px;color:var(--gold);letter-spacing:4px;margin-bottom:8px}
+.story-title{font-family:'Noto Serif SC',serif;font-size:28px;font-weight:900;color:var(--paper);letter-spacing:3px;margin-bottom:6px}
+.story-subtitle{font-size:13px;color:rgba(253,246,227,0.45);letter-spacing:2px}
+.story-scroll{flex:1;overflow-y:auto;padding:30px 40px 40px}
+.story-container{max-width:820px}
+.story-chapter{display:flex;gap:24px;margin-bottom:32px;opacity:0;transform:translateY(20px);transition:opacity .5s,transform .5s}
+.story-chapter.visible{opacity:1;transform:translateY(0)}
+.story-chapter-num{font-family:'Noto Serif SC',serif;font-size:42px;font-weight:900;color:rgba(192,57,43,0.25);line-height:1;flex-shrink:0;width:70px;text-align:center}
+.story-chapter.active .story-chapter-num{color:var(--red-main);text-shadow:0 0 20px rgba(192,57,43,0.4)}
+.story-chapter-body{flex:1;border-left:2px solid rgba(139,0,0,0.2);padding-left:20px}
+.story-chapter-meta{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.story-chapter-era{font-size:10px;color:var(--gold);letter-spacing:3px;border:1px solid rgba(212,175,55,0.3);padding:2px 8px}
+.story-chapter-years{font-size:10px;color:rgba(253,246,227,0.3);letter-spacing:2px}
+.story-chapter-title{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:700;color:var(--paper);letter-spacing:2px;margin-bottom:10px}
+.story-chapter-narrative{font-size:13px;color:rgba(253,246,227,0.65);line-height:2;letter-spacing:.3px;margin-bottom:12px}
+.story-chapter-quote{border-left:3px solid var(--red-main);padding:8px 14px;background:rgba(139,0,0,0.08);font-family:'Noto Serif SC',serif;font-style:italic;color:var(--gold);font-size:13px;margin-bottom:14px}
+.story-chapter-themes{display:flex;flex-wrap:wrap;gap:6px}
+.story-theme{font-size:10px;padding:3px 10px;border:1px solid rgba(192,57,43,0.3);color:rgba(253,246,227,0.5);letter-spacing:1px;cursor:pointer;transition:all .2s}
+.story-theme:hover,.story-theme.active{background:rgba(192,57,43,0.2);border-color:var(--red-main);color:var(--paper)}
+.story-chapter-cta{font-size:11px;color:rgba(212,175,55,0.4);letter-spacing:2px;margin-top:10px;cursor:pointer;transition:color .2s}
+.story-chapter-cta:hover{color:var(--gold)}
+.story-chapter-milestones{margin:12px 0;padding:10px 12px;background:rgba(139,0,0,0.08);border-left:2px solid rgba(212,175,55,0.3)}
+.story-milestones-label{font-size:9px;color:var(--gold);letter-spacing:2px;margin-bottom:8px}
+.story-milestone{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:12px}
+.story-milestone:last-child{margin-bottom:0}
+.story-milestone-year{color:var(--red-main);font-weight:700;flex-shrink:0;min-width:56px;font-size:11px}
+.story-milestone-text{color:rgba(253,246,227,0.55);line-height:1.4}
+
+/* ── CHAPTER NAV (sidebar) ── */
+.story-chapter-nav{position:fixed;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:50}
+.story-nav-dot{width:8px;height:8px;border-radius:50%;border:1px solid rgba(139,0,0,0.4);cursor:pointer;transition:all .2s}
+.story-nav-dot.active{background:var(--red-main);border-color:var(--red-main);box-shadow:0 0 8px rgba(192,57,43,0.5)}
+.ctrl-stack{position:absolute;top:120px;right:20px;z-index:100;display:flex;flex-direction:column;gap:3px}
+.ctrl-btn{padding:7px 12px;background:rgba(26,10,0,0.9);border:1px solid rgba(192,57,43,0.35);color:var(--gold);font-family:'Noto Sans SC',sans-serif;font-size:11px;cursor:pointer;backdrop-filter:blur(8px);transition:all .2s;text-align:center;letter-spacing:1px;display:block;white-space:nowrap}
+.ctrl-btn:hover{background:rgba(192,57,43,0.2);border-color:var(--red-main);color:var(--paper)}
+.ctrl-btn.active{background:rgba(192,57,43,0.2);border-color:var(--red-main);color:var(--paper)}
+.ctrl-sep{height:1px;background:rgba(139,0,0,0.25);margin:3px 0}
+.map-legend{position:absolute;bottom:20px;left:250px;z-index:100;background:rgba(26,10,0,0.92);border:1px solid rgba(139,0,0,0.25);padding:12px 14px;backdrop-filter:blur(10px)}
+.legend-title{font-size:10px;color:var(--gold);letter-spacing:3px;margin-bottom:8px}
+.legend-item{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px;color:rgba(253,246,227,0.6);letter-spacing:1px}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.map-stats{position:absolute;bottom:20px;right:20px;z-index:100;background:rgba(26,10,0,0.92);border:1px solid rgba(139,0,0,0.25);padding:10px 16px;backdrop-filter:blur(8px);display:flex;gap:16px}
+.stat{text-align:center}
+.stat-num{font-family:'Noto Serif SC',serif;font-size:18px;font-weight:900;color:var(--red-main);display:block;line-height:1}
+.stat-label{font-size:9px;color:rgba(253,246,227,0.35);letter-spacing:2px;margin-top:3px;display:block}
+.info-panel{position:absolute;top:110px;right:20px;z-index:150;width:290px;max-height:calc(100% - 150px);background:rgba(26,10,0,0.97);border:1px solid rgba(192,57,43,0.4);backdrop-filter:blur(16px);overflow-y:auto;transition:transform .3s,opacity .3s;transform:translateX(110%);opacity:0;box-shadow:0 8px 40px rgba(0,0,0,0.6)}
+.info-panel.open{transform:translateX(0);opacity:1}
+.info-hdr{padding:12px 16px;border-bottom:1px solid rgba(139,0,0,0.25);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(26,10,0,0.98);z-index:1}
+.info-hdr-title{font-family:'Noto Serif SC',serif;font-size:12px;color:var(--gold);letter-spacing:2px}
+.info-close{background:none;border:1px solid rgba(139,0,0,0.25);color:rgba(253,246,227,0.4);width:22px;height:22px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;border-radius:2px}
+.info-close:hover{border-color:var(--red-main);color:var(--paper)}
+.info-body{padding:14px 16px}
+.info-year{font-size:10px;color:var(--red-main);letter-spacing:2px;margin-bottom:4px}
+.info-place{font-size:10px;color:rgba(212,175,55,0.45);letter-spacing:2px;margin-bottom:8px}
+.info-title{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:700;color:var(--paper);line-height:1.4;margin-bottom:10px;letter-spacing:1px}
+.info-divider{height:1px;background:linear-gradient(90deg,var(--red-main),transparent);margin-bottom:10px}
+.info-desc{font-size:12px;color:rgba(253,246,227,0.65);line-height:1.85;letter-spacing:.3px}
+.info-quote{border-left:2px solid var(--red-main);padding:7px 12px;margin-top:12px;background:rgba(139,0,0,0.08);font-family:'Noto Serif SC',serif;font-style:italic;color:var(--gold-light);font-size:12px;line-height:1.7}
+.info-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px}
+.info-tag{font-size:9px;padding:2px 7px;border-radius:1px;letter-spacing:1px;border:1px solid}
+.info-tag.r{color:var(--red-bright);border-color:rgba(231,76,60,.4);background:rgba(231,76,60,.08)}
+.info-tag.g{color:var(--gold);border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.08)}
+.info-tag.b{color:#27AE60;border-color:rgba(39,174,96,.4);background:rgba(39,174,96,.08)}
+.info-nearby-header{padding:8px 16px 4px;font-size:10px;color:rgba(212,175,55,.35);letter-spacing:2px;border-top:1px solid rgba(139,0,0,.15)}
+.nearby-item{padding:8px 16px;cursor:pointer;border-bottom:1px solid rgba(139,0,0,.07);transition:background .15s;display:flex;align-items:center;gap:8px}
+.nearby-item:hover{background:rgba(139,0,0,.1)}
+.nearby-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.nearby-name{font-size:12px;color:rgba(253,246,227,0.65);flex:1}
+.nearby-year{font-size:10px;color:var(--red-main);letter-spacing:1px}
+
+/* Province detail */
+.province-detail-header{display:flex;align-items:center;justify-content:space-between}
+.province-detail-clear{cursor:pointer;color:var(--gold);font-size:11px;letter-spacing:2px;padding:2px 8px;border:1px solid rgba(212,175,55,0.3);border-radius:8px;transition:all .15s}
+.province-detail-clear:hover{background:rgba(212,175,55,0.1)}
+#map-filter-indicator{display:none}
+.province-detail{padding:14px;border-top:1px solid rgba(139,0,0,0.25)}
+.province-detail-title{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--gold);letter-spacing:2px;margin-bottom:3px}
+.province-detail-sub{font-size:10px;color:rgba(253,246,227,0.35);letter-spacing:2px;margin-bottom:12px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--red-deep);border-radius:2px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* Empty state */
+.empty-state{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:rgba(253,246,227,0.2);letter-spacing:3px;font-size:14px}
+
+/* ═══════════ RESPONSIVE ═══════════ */
+/* Tablet */
+@media(max-width:900px){.province-sidebar{display:none}.logo-sub{display:none}.stat-pill span:not(:first-child){display:none}.tab-btn{padding:6px 12px;font-size:12px}.map-legend{left:10px}.detail-inner{padding:30px 20px 60px}.detail-title{font-size:24px}}
+
+/* Mobile */
+
+    /* ── Mobile cover keywords ── */
+    @media(max-width:480px){
+      .float-kw{font-size:16px !important;}
+      #floating-keywords span[style*="left:8"],#floating-keywords span[style*="left:9"]{left:auto !important;right:3% !important;}
+    }
+    /* ── Mobile map layout ── */
+    @media(max-width:768px){
+      .map-main{flex-direction:column !important;}
+      .province-sidebar{width:100% !important;max-height:160px;overflow-y:auto;border-right:none !important;border-bottom:1px solid rgba(139,0,0,0.2);}
+      .map-legend{left:10px !important;bottom:auto !important;top:110px !important;padding:6px 10px !important;}
+      .map-legend .legend-item span{display:none;}
+      .map-stats{right:10px !important;bottom:auto !important;top:110px !important;padding:6px 10px !important;}
+      .ctrl-stack{top:auto !important;bottom:15px !important;right:10px !important;flex-direction:row !important;}
+      .info-panel{width:calc(100% - 20px) !important;right:10px !important;top:70px !important;max-height:calc(100% - 90px) !important;}
+    }
+
+@media(max-width:768px){
+  /* ── Header ── */
+  header{height:52px;padding:0 12px;gap:4px}
+  .logo svg{width:24px;height:24px}
+  .logo-text{font-size:16px;letter-spacing:2px}
+  .logo-sub{display:none!important}
+  .tab-nav{padding:2px}
+  .tab-btn{padding:8px 14px;font-size:13px;min-width:44px;min-height:44px}
+  .nav-right .stat-pill{display:none!important}
+  .btn-contribute{padding:8px 12px;font-size:12px;min-height:44px}
+  .main{top:52px}
+
+  /* ── Cover ── */
+  #cover .float-kw{font-size:18px!important;opacity:0.15}
+  #china-map-bg{width:280px!important;height:240px!important;opacity:0.02!important}
+  #dot-ring{width:260px!important;height:260px!important}
+  .orbit-dot{animation:none!important;opacity:0.1!important}
+  #pulse-rings .pulse-ring{width:150px!important;height:150px!important}
+  #cover > div[style*="z-index:1;text-align"] div:first-child{
+    font-size:64px!important;letter-spacing:10px!important;text-shadow:0 0 30px rgba(212,175,55,0.3),0 0 60px rgba(192,57,43,0.15)!important
+  }
+  #cover > div[style*="z-index:1;text-align"] div:nth-child(2){font-size:11px!important;letter-spacing:4px!important}
+  #cover > div[style*="margin-top:12px"]{margin-top:8px!important}
+  #cover > div[style*="margin-top:28px"][style*="text-align:center"]{
+    margin-top:16px!important
+  }
+  #cover > div[style*="margin-top:28px"] > div:first-child{font-size:13px!important;letter-spacing:2px!important}
+  #cover > div[style*="margin-top:28px"] > div:last-child{font-size:10px!important}
+  #cover > div[style*="margin-top:36px"]{margin-top:20px!important}
+  #cover > div[style*="margin-top:36px"] > div{width:30px!important}
+  #cover-enter{margin-top:28px!important;padding:12px 32px!important;font-size:13px!important;min-height:44px;min-width:120px;letter-spacing:3px!important}
+  #cover > div[style*="bottom:40px"]{bottom:24px!important}
+  #mountain-silhouette{height:25%!important}
+  #ember-container .ember{width:2px!important;height:2px!important}
+  #deco-stars .deco-star-svg{display:none}
+  #grid-canvas{display:none}
+
+  /* ── Story ── */
+  .story-header{padding:20px 16px 14px}
+  .story-title{font-size:22px}
+  .story-subtitle{font-size:11px}
+  .story-scroll{padding:20px 16px 40px}
+  .story-chapter{flex-direction:column;gap:12px;margin-bottom:28px}
+  .story-chapter-num{font-size:32px;width:50px}
+  .story-chapter-body{border-left-width:1px;padding-left:14px}
+  .story-chapter-title{font-size:16px}
+  .story-chapter-narrative{font-size:12px}
+  .story-chapter-nav{display:none}
+  /* ── Timeline ── */
+  .timeline-filters{
+    padding:8px 12px;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .timeline-filters::-webkit-scrollbar{display:none}
+  .timeline-filters .f-btn{flex-shrink:0;padding:6px 12px;min-height:36px;min-width:36px}
+  .timeline-filters .f-divider{flex-shrink:0}
+  .timeline-filters .f-label{flex-shrink:0}
+  .event-card{min-width:180px;max-width:220px;padding:10px 14px}
+  .event-title{font-size:13px}
+  .event-desc{font-size:11px;-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+  .timeline-legend{left:12px;bottom:12px;gap:10px;flex-wrap:wrap}
+  .timeline-legend .legend-item{font-size:10px}
+  .zoom-controls{bottom:12px;right:12px}
+  .zoom-btn{width:40px;height:40px;font-size:20px}
+
+  /* ── Map ── */
+  .map-filters{
+    padding:8px 12px;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .map-filters::-webkit-scrollbar{display:none}
+  .map-filters .f-btn{flex-shrink:0;padding:6px 12px;min-height:36px}
+  .map-filters .f-divider{flex-shrink:0}
+  .map-filters .f-label{flex-shrink:0}
+  .ctrl-stack{top:auto;bottom:70px;right:8px;gap:2px}
+  .ctrl-btn{padding:8px 10px;font-size:11px;min-height:36px}
+  .map-legend{left:8px;bottom:8px;padding:8px 10px;max-width:180px}
+  .map-legend .legend-item{font-size:10px}
+  .map-stats{bottom:8px;right:8px;padding:6px 10px;gap:10px}
+  .map-stats .stat-num{font-size:15px}
+  .map-stats .stat-label{font-size:8px}
+  .info-panel{width:100%!important;max-width:100%!important;max-height:55vh!important;top:auto!important;bottom:0!important;right:0!important;transform:translateY(100%)!important;border-radius:12px 12px 0 0}
+  .info-panel.open{transform:translateY(0)!important}
+  .province-sidebar{max-height:140px!important}
+  .province-item{padding:6px 10px!important}
+  .province-detail{padding:10px!important}
+  .province-detail-title{font-size:12px!important}
+  .info-title{font-size:15px}
+  .info-desc{font-size:12px}
+
+  /* ── Detail Overlay ── */
+  .detail-inner{padding:20px 16px 60px}
+  .detail-title{font-size:22px!important;letter-spacing:1px!important}
+  .detail-desc{font-size:14px}
+  .detail-quote{font-size:14px;padding:10px 14px}
+  .detail-back{margin-bottom:20px;min-height:44px;display:flex;align-items:center}
+  .detail-tags{gap:6px}
+  .detail-tag{font-size:11px;padding:4px 10px}
+
+  /* ── General ── */
+  .empty-state{font-size:12px}
+}
+
+/* Small phones */
+@media(max-width:375px){
+  #cover .float-kw{display:none}
+  #cover > div[style*="z-index:1;text-align"] div:first-child{font-size:52px!important;letter-spacing:6px!important}
+  .tab-btn{padding:8px 10px;font-size:12px}
+  .event-card{min-width:160px;max-width:180px;padding:8px 12px}
+}
+
+/* ══ FIGURES VIEW ══ */
+.figures-view{flex:1;display:flex;flex-direction:column;background:var(--ink);overflow:hidden}
+.figures-filter-bar{background:rgba(26,10,0,0.97);padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(139,0,0,0.2);flex-shrink:0}
+.f-label{font-size:11px;color:rgba(212,175,55,0.4);letter-spacing:3px;margin-right:6px}
+.f-btn{background:none;border:1px solid rgba(139,0,0,0.3);color:rgba(253,246,227,0.5);padding:4px 14px;font-size:11px;cursor:pointer;letter-spacing:2px;border-radius:2px;transition:all .2s}
+.f-btn.active,.f-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,0.08)}
+.figures-grid{flex:1;overflow-y:auto;padding:20px 24px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-content:start}
+.figures-grid::-webkit-scrollbar{width:3px}
+.figures-grid::-webkit-scrollbar-thumb{background:var(--red-deep)}
+.figure-card{background:rgba(26,10,0,0.97);border:1px solid rgba(192,57,43,0.25);border-radius:3px;overflow:hidden;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.figure-card:hover{border-color:var(--red-main);box-shadow:0 0 20px rgba(192,57,43,0.15)}
+.figure-card-header{padding:14px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(139,0,0,0.15)}
+.figure-avatar{width:48px;height:48px;border-radius:50%;background:rgba(192,57,43,0.15);border:2px solid rgba(192,57,43,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.figure-info{flex:1;min-width:0}
+.figure-name{font-family:'Noto Serif SC',serif;font-size:15px;font-weight:700;color:var(--gold);letter-spacing:1px;margin-bottom:2px}
+.figure-years{font-size:10px;color:rgba(253,246,227,0.35);letter-spacing:1px}
+.figure-tags{padding:2px 8px;border:1px solid rgba(139,0,0,0.2);border-radius:2px;font-size:10px;color:rgba(253,246,227,0.35);white-space:nowrap}
+.figure-card-body{padding:10px 16px 14px}
+.figure-brief{font-size:11px;color:rgba(253,246,227,0.5);line-height:1.8;margin-bottom:10px}
+.figure-events-label{font-size:10px;color:rgba(212,175,55,0.35);letter-spacing:2px;margin-bottom:5px}
+.figure-event-list{display:flex;flex-direction:column;gap:3px}
+.figure-event-item{display:flex;align-items:baseline;gap:7px;font-size:11px}
+.figure-event-year{color:var(--red-main);font-weight:600;flex-shrink:0;letter-spacing:1px}
+.figure-event-text{color:rgba(253,246,227,0.5);line-height:1.4}
+.figure-detail-overlay{position:fixed;top:64px;left:0;right:0;bottom:0;z-index:200;background:rgba(26,10,0,0.97);overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.figure-detail-overlay.open{transform:translateY(0)}
+.figure-detail-inner{max-width:680px;margin:0 auto;padding:36px 36px 80px}
+.figure-detail-back{color:rgba(212,175,55,0.5);font-size:12px;cursor:pointer;margin-bottom:26px;display:inline-flex;align-items:center;gap:5px;letter-spacing:1px;transition:color .2s}
+.figure-detail-back:hover{color:var(--gold)}
+.figure-detail-hero{display:flex;align-items:center;gap:18px;margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid rgba(139,0,0,0.2)}
+.figure-detail-avatar{width:72px;height:72px;border-radius:50%;background:rgba(192,57,43,0.15);border:2px solid rgba(212,175,55,0.3);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0}
+.figure-detail-name{font-family:'Noto Serif SC',serif;font-size:24px;font-weight:900;color:var(--gold);letter-spacing:2px;margin-bottom:5px}
+.figure-detail-meta{font-size:11px;color:rgba(253,246,227,0.35);letter-spacing:1px}
+.figure-detail-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.figure-detail-tag{padding:2px 9px;border:1px solid rgba(139,0,0,0.25);border-radius:2px;font-size:10px;color:rgba(253,246,227,0.45);letter-spacing:1px}
+.figure-detail-section-title{font-size:10px;color:rgba(212,175,55,0.4);letter-spacing:3px;margin-bottom:12px;margin-top:24px}
+.figure-timeline-list{display:flex;flex-direction:column}
+.figure-tl-item{display:flex;gap:14px;padding-bottom:18px;position:relative}
+.figure-tl-item:not(:last-child)::before{content:'';position:absolute;left:6px;top:18px;bottom:0;width:1px;background:rgba(139,0,0,0.18)}
+.figure-tl-dot{width:13px;height:13px;border-radius:50%;background:var(--red-main);border:2px solid var(--ink);flex-shrink:0;margin-top:2px;position:relative;z-index:1}
+.figure-tl-year{font-size:11px;color:var(--red-main);font-weight:600;letter-spacing:1px;margin-bottom:2px}
+.figure-tl-text{font-size:12px;color:rgba(253,246,227,0.65);line-height:1.6}
+
+/* ══ TODAY BADGE & PANEL ══ */
+.today-badge{background:rgba(26,10,0,0.95);border:1px solid rgba(212,175,55,0.35);border-radius:3px;padding:12px 16px;max-width:260px;cursor:pointer;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(10px);box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+.today-badge:hover{border-color:var(--gold);box-shadow:0 4px 28px rgba(212,175,55,0.18)}
+.today-badge-eyebrow{font-size:9px;color:rgba(212,175,55,0.45);letter-spacing:3px;margin-bottom:5px}
+.today-badge-icon{font-size:14px;margin-bottom:5px}
+.today-badge-title{font-family:'Noto Serif SC',serif;font-size:13px;font-weight:700;color:var(--paper);letter-spacing:1px;line-height:1.4;margin-bottom:4px}
+.today-badge-year{font-size:10px;color:var(--red-main);letter-spacing:1px}
+.today-badge-hint{font-size:9px;color:rgba(253,246,227,0.2);letter-spacing:1px;margin-top:7px;text-align:center}
+.today-panel{position:fixed;top:64px;left:0;right:0;bottom:0;z-index:250;background:rgba(26,10,0,0.97);overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.today-panel.open{transform:translateY(0)}
+.today-panel-inner{max-width:580px;margin:0 auto;padding:36px 36px 80px}
+.today-panel-back{color:rgba(212,175,55,0.6);font-size:14px;cursor:pointer;margin-bottom:26px;display:inline-flex;align-items:center;gap:6px;letter-spacing:1px}
+.today-panel-back:hover{color:var(--gold)}
+.today-panel-eyebrow{font-size:10px;color:rgba(212,175,55,0.35);letter-spacing:3px;margin-bottom:8px}
+.today-panel-date{font-family:'Noto Serif SC',serif;font-size:38px;font-weight:900;color:var(--gold);letter-spacing:2px;margin-bottom:5px;line-height:1}
+.today-panel-sub{font-size:11px;color:rgba(253,246,227,0.35);letter-spacing:2px;margin-bottom:26px}
+.today-events-list{display:flex;flex-direction:column}
+.today-ev-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid rgba(139,0,0,0.1)}
+.today-ev-dot{width:10px;height:10px;border-radius:50%;background:var(--red-main);flex-shrink:0;margin-top:5px}
+.today-ev-year{font-size:11px;color:var(--red-main);font-weight:600;letter-spacing:1px;margin-bottom:3px}
+.today-ev-title{font-family:'Noto Serif SC',serif;font-size:14px;font-weight:700;color:var(--paper);letter-spacing:1px;line-height:1.4;margin-bottom:5px}
+.today-ev-desc{font-size:11px;color:rgba(253,246,227,0.5);line-height:1.65}
+.today-panel-empty{text-align:center;padding:50px 0;color:rgba(253,246,227,0.25);font-size:12px;letter-spacing:2px}
+.today-panel-hint{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:rgba(26,10,0,0.88);border:1px solid rgba(212,175,55,0.2);border-radius:40px;padding:10px 22px;cursor:pointer;opacity:1;transition:opacity .4s;z-index:10}
+.today-panel-hint.dismissed{opacity:0;pointer-events:none}
+.today-panel-hint-icon{font-size:15px}
+.today-panel-hint-text{font-size:12px;color:rgba(253,246,227,0.6);letter-spacing:1px}
+.today-panel-hint-dot{width:6px;height:6px;border-radius:50%;background:var(--red-main);animation:pulse-dot 1.5s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+
+@media(max-width:768px){
+  .today-badge{top:70px;right:12px;max-width:220px;padding:10px 14px}
+  .figures-filter-bar{padding:8px 12px}
+  .figures-grid{padding:14px 12px 30px;grid-template-columns:1fr}
+  .figure-detail-inner{padding:24px 20px 60px}
+  .today-panel-inner{padding:24px 20px 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ COVER / SPLASH ═══════════ -->
+<div id="cover" style="position:fixed;inset:0;z-index:9999;background:#0A0400;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1s cubic-bezier(.4,0,.2,1),transform 1s cubic-bezier(.4,0,.2,1);overflow:hidden;">
+  <!-- Background particles -->
+  <canvas id="cover-particles" style="position:absolute;inset:0;z-index:0;"></canvas>
+
+  <!-- ═══════════ MOUNTAIN SILHOUETTE ═══════════ -->
+  <svg id="mountain-silhouette" style="position:absolute;bottom:0;left:0;right:0;height:35%;z-index:0;opacity:0.25;pointer-events:none;" viewBox="0 0 1440 400" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="mountainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#8B0000;stop-opacity:0.6"/>
+        <stop offset="100%" style="stop-color:#0A0400;stop-opacity:0"/>
+      </linearGradient>
+    </defs>
+    <!-- Far mountains -->
+    <path d="M0,400 L0,280 Q120,220 240,260 Q360,200 480,240 Q600,180 720,220 Q840,160 960,200 Q1080,140 1200,180 Q1320,120 1440,160 L1440,400 Z" fill="url(#mountainGrad)"/>
+    <!-- Near mountains -->
+    <path d="M0,400 L0,320 Q180,260 360,300 Q540,240 720,280 Q900,220 1080,260 Q1260,200 1440,240 L1440,400 Z" fill="rgba(139,0,0,0.15)"/>
+  </svg>
+
+
+
+  <!-- Decorative top line -->
+  <div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,#D4AF37,transparent);margin-bottom:40px;opacity:0;animation:fadeSlideDown .8s .3s forwards;"></div>
+
+  <!-- ═══════════ ANIMATED GRID LINES ═══════════ -->
+  <canvas id="grid-canvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0.06;"></canvas>
+
+  <!-- ═══════════ CHINA MAP SILHOUETTE ═══════════ -->
+  <div id="china-map-bg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;opacity:0.04;width:600px;height:500px;">
+    <svg viewBox="0 0 600 500" style="width:100%;height:100%;">
+      <!-- Simplified China outline -->
+      <path fill="#D4AF37" d="
+        M180,60 L200,50 L230,55 L260,45 L290,50 L310,40 L340,45 L370,38 L400,42 L420,35
+        L440,40 L460,50 L470,65 L480,80 L490,95 L500,110 L510,130 L505,150 L510,170
+        L520,185 L515,200 L520,215 L510,230 L500,245 L490,255 L480,265 L470,275
+        L460,285 L450,295 L440,305 L430,315 L420,325 L410,335 L400,345 L390,355
+        L380,360 L370,365 L360,370 L350,375 L340,380 L330,385 L320,390 L310,395
+        L300,400 L290,405 L280,400 L270,395 L260,390 L250,385 L240,380 L230,375
+        L220,370 L210,365 L200,360 L190,355 L180,350 L170,345 L160,340 L150,335
+        L140,325 L130,315 L120,305 L115,290 L110,275 L105,260 L100,245 L95,230
+        L90,215 L88,200 L85,185 L88,170 L90,155 L95,140 L100,125 L108,110
+        L115,95 L125,82 L140,70 L160,63 L180,60 Z
+        M300,400 L310,410 L320,420 L315,430 L305,435 L295,430 L290,420 L295,410 Z
+        M200,360 L190,370 L185,380 L190,390 L200,395 L210,390 L215,380 L210,370 Z
+      "/>
+    </svg>
+  </div>
+
+  <!-- ═══════════ HORIZONTAL SCAN LINE ═══════════ -->
+  <div id="scan-line" style="position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.3),transparent);z-index:1;pointer-events:none;animation:scanMove 8s linear infinite;top:0;"></div>
+
+  <!-- ═══════════ SIDE DECORATIVE BARS ═══════════ -->
+  <div style="position:absolute;left:0;top:20%;bottom:20%;width:3px;z-index:2;pointer-events:none;background:linear-gradient(to bottom,transparent,rgba(139,0,0,0.4),transparent);"></div>
+  <div style="position:absolute;right:0;top:20%;bottom:20%;width:3px;z-index:2;pointer-events:none;background:linear-gradient(to bottom,transparent,rgba(139,0,0,0.4),transparent);"></div>
+  <div style="position:absolute;left:0;top:20%;bottom:20%;width:1px;margin-left:8px;z-index:2;pointer-events:none;background:linear-gradient(to bottom,transparent,rgba(212,175,55,0.15),transparent);"></div>
+  <div style="position:absolute;right:0;top:20%;bottom:20%;width:1px;margin-right:8px;z-index:2;pointer-events:none;background:linear-gradient(to bottom,transparent,rgba(212,175,55,0.15),transparent);"></div>
+
+  <!-- ═══════════ FLOATING DOTS RING ═══════════ -->
+  <div id="dot-ring" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;z-index:0;pointer-events:none;">
+    <div class="orbit-dot" style="animation-delay:0s;"></div>
+    <div class="orbit-dot" style="animation-delay:1.5s;"></div>
+    <div class="orbit-dot" style="animation-delay:3s;"></div>
+    <div class="orbit-dot" style="animation-delay:4.5s;"></div>
+    <div class="orbit-dot" style="animation-delay:6s;"></div>
+    <div class="orbit-dot" style="animation-delay:7.5s;"></div>
+  </div>
+
+  <!-- ═══════════ TOP CENTER EMBLEM ═══════════ -->
+  <div style="position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;opacity:0.3;display:flex;align-items:center;gap:10px;">
+    <div style="width:30px;height:1px;background:linear-gradient(to right,transparent,#D4AF37);"></div>
+    <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#D4AF37" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <div style="width:30px;height:1px;background:linear-gradient(to left,transparent,#D4AF37);"></div>
+  </div>
+
+  <style>
+    @keyframes scanMove {
+      0%{top:0%;opacity:0;}
+      5%{opacity:1;}
+      95%{opacity:1;}
+      100%{top:100%;opacity:0;}
+    }
+    .orbit-dot {
+      position:absolute;
+      width:4px;height:4px;
+      background:#D4AF37;
+      border-radius:50%;
+      top:50%;left:50%;
+      box-shadow:0 0 6px rgba(212,175,55,0.6);
+      animation:orbitMove 12s linear infinite;
+      transform-origin:0 0;
+    }
+    @keyframes orbitMove {
+      0%{transform:rotate(0deg) translateX(240px) rotate(0deg);opacity:0.1;}
+      10%{opacity:0.4;}
+      90%{opacity:0.4;}
+      100%{transform:rotate(360deg) translateX(240px) rotate(-360deg);opacity:0.1;}
+    }
+  </style>
+
+  <script>
+    // Animated grid canvas
+    (function(){
+      var canvas=document.getElementById('grid-canvas');
+      if(!canvas)return;
+      var cover=document.getElementById('cover');
+      if(!cover)return;
+      canvas.width=cover.offsetWidth||window.innerWidth;
+      canvas.height=cover.offsetHeight||window.innerHeight;
+      var ctx=canvas.getContext('2d');
+      ctx.strokeStyle='rgba(212,175,55,1)';
+      ctx.lineWidth=0.5;
+      var spacing=60;
+      for(var x=0;x<canvas.width;x+=spacing){
+        ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();
+      }
+      for(var y=0;y<canvas.height;y+=spacing){
+        ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();
+      }
+    })();
+  </script>
+
+  <!-- ═══════════ FLOATING KEYWORDS (bottom area) ═══════════ -->
+  <div id="floating-keywords" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+    <span class="float-kw" style="left:4%;top:12%;animation-delay:0s;animation-duration:8s;">革命</span>
+    <span class="float-kw" style="left:76%;top:8%;animation-delay:1s;animation-duration:10s;">奋斗</span>
+    <span class="float-kw" style="left:6%;top:75%;animation-delay:2s;animation-duration:9s;">胜利</span>
+    <span class="float-kw" style="left:78%;top:70%;animation-delay:0.5s;animation-duration:11s;">信仰</span>
+    <span class="float-kw" style="left:15%;top:20%;animation-delay:3s;animation-duration:12s;">初心</span>
+    <span class="float-kw" style="left:82%;top:18%;animation-delay:1.5s;animation-duration:8s;">征程</span>
+    <span class="float-kw" style="left:8%;top:50%;animation-delay:4s;animation-duration:10s;">使命</span>
+    <span class="float-kw" style="left:80%;top:48%;animation-delay:2.5s;animation-duration:9s;">复兴</span>
+    <span class="float-kw" style="left:3%;top:92%;animation-delay:3.5s;animation-duration:11s;">团结</span>
+    <span class="float-kw" style="left:82%;top:88%;animation-delay:4.5s;animation-duration:8s;">前行</span>
+    <span class="float-kw" style="left:45%;top:5%;animation-delay:5s;animation-duration:10s;">理想</span>
+    <span class="float-kw" style="left:55%;top:90%;animation-delay:5.5s;animation-duration:9s;">信念</span>
+  </div>
+
+  <!-- ═══════════ DECORATIVE STARS ═══════════ -->
+  <div id="deco-stars" style="position:absolute;inset:0;z-index:0;pointer-events:none;">
+    <div class="deco-star" style="left:15%;top:18%;width:3px;height:3px;animation-delay:0s;"></div>
+    <div class="deco-star" style="left:25%;top:8%;width:2px;height:2px;animation-delay:1s;"></div>
+    <div class="deco-star" style="left:72%;top:12%;width:3px;height:3px;animation-delay:0.5s;"></div>
+    <div class="deco-star" style="left:82%;top:25%;width:2px;height:2px;animation-delay:2s;"></div>
+    <div class="deco-star" style="left:10%;top:60%;width:2px;height:2px;animation-delay:1.5s;"></div>
+    <div class="deco-star" style="left:88%;top:58%;width:3px;height:3px;animation-delay:3s;"></div>
+    <div class="deco-star" style="left:30%;top:5%;width:2px;height:2px;animation-delay:0.8s;"></div>
+    <div class="deco-star" style="left:60%;top:3%;width:2px;height:2px;animation-delay:2.5s;"></div>
+    <div class="deco-star" style="left:75%;top:38%;width:2px;height:2px;animation-delay:1.2s;"></div>
+    <div class="deco-star" style="left:20%;top:40%;width:2px;height:2px;animation-delay:3.5s;"></div>
+    <!-- Five-pointed star shapes -->
+    <svg class="deco-star-svg" style="left:8%;top:30%;width:20px;height:20px;opacity:0.15;animation:starRotate 20s linear infinite;" viewBox="0 0 24 24"><path fill="#D4AF37" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <svg class="deco-star-svg" style="right:8%;top:40%;width:16px;height:16px;opacity:0.12;animation:starRotate 25s linear infinite reverse;" viewBox="0 0 24 24"><path fill="#D4AF37" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <svg class="deco-star-svg" style="left:18%;top:82%;width:14px;height:14px;opacity:0.1;animation:starRotate 18s linear infinite;" viewBox="0 0 24 24"><path fill="#D4AF37" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <svg class="deco-star-svg" style="right:15%;top:78%;width:18px;height:18px;opacity:0.1;animation:starRotate 22s linear infinite reverse;" viewBox="0 0 24 24"><path fill="#D4AF37" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+  </div>
+
+  <!-- ═══════════ PULSING RINGS ═══════════ -->
+  <div id="pulse-rings" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;">
+    <div class="pulse-ring" style="width:300px;height:300px;animation-delay:0s;"></div>
+    <div class="pulse-ring" style="width:300px;height:300px;animation-delay:2s;"></div>
+    <div class="pulse-ring" style="width:300px;height:300px;animation-delay:4s;"></div>
+  </div>
+
+  <!-- ═══════════ RED RIBBONS ═══════════ -->
+  <svg id="ribbon-top" style="position:absolute;top:0;left:0;right:0;height:60px;z-index:1;pointer-events:none;opacity:0.5;" viewBox="0 0 1440 60" preserveAspectRatio="none">
+    <path d="M0,0 L0,30 Q360,10 720,30 Q1080,50 1440,30 L1440,0 Z" fill="url(#ribbonGrad)"/>
+    <defs>
+      <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#8B0000;stop-opacity:0.8"/>
+        <stop offset="100%" style="stop-color:#8B0000;stop-opacity:0"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- ═══════════ CORNER DECORATIONS ═══════════ -->
+  <svg style="position:absolute;top:10px;left:10px;width:80px;height:80px;z-index:2;pointer-events:none;opacity:0.3;" viewBox="0 0 80 80">
+    <path d="M0,0 L0,60 M0,0 L60,0" stroke="#D4AF37" stroke-width="1" fill="none"/>
+    <path d="M0,15 L15,0 M0,30 L30,0" stroke="#D4AF37" stroke-width="0.5" fill="none" opacity="0.5"/>
+  </svg>
+  <svg style="position:absolute;top:10px;right:10px;width:80px;height:80px;z-index:2;pointer-events:none;opacity:0.3;" viewBox="0 0 80 80">
+    <path d="M80,0 L80,60 M80,0 L20,0" stroke="#D4AF37" stroke-width="1" fill="none"/>
+    <path d="M80,15 L65,0 M80,30 L50,0" stroke="#D4AF37" stroke-width="0.5" fill="none" opacity="0.5"/>
+  </svg>
+  <svg style="position:absolute;bottom:10px;left:10px;width:80px;height:80px;z-index:2;pointer-events:none;opacity:0.3;" viewBox="0 0 80 80">
+    <path d="M0,80 L0,20 M0,80 L60,80" stroke="#D4AF37" stroke-width="1" fill="none"/>
+    <path d="M0,65 L15,80 M0,50 L30,80" stroke="#D4AF37" stroke-width="0.5" fill="none" opacity="0.5"/>
+  </svg>
+  <svg style="position:absolute;bottom:10px;right:10px;width:80px;height:80px;z-index:2;pointer-events:none;opacity:0.3;" viewBox="0 0 80 80">
+    <path d="M80,80 L80,20 M80,80 L20,80" stroke="#D4AF37" stroke-width="1" fill="none"/>
+    <path d="M80,65 L65,80 M80,50 L50,80" stroke="#D4AF37" stroke-width="0.5" fill="none" opacity="0.5"/>
+  </svg>
+
+  <!-- ═══════════ GOLDEN DIVIDER LINES ═══════════ -->
+  <div style="position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);width:200px;z-index:2;pointer-events:none;">
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.4),transparent);"></div>
+  </div>
+  <div style="position:absolute;top:65%;left:50%;transform:translate(-50%,-50%);width:200px;z-index:2;pointer-events:none;">
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.3),transparent);"></div>
+  </div>
+
+  <!-- ═══════════ EMBER PARTICLES (falling red/gold) ═══════════ -->
+  <div id="ember-container" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;"></div>
+
+  <style>
+    /* Decorative stars */
+    .deco-star {
+      position:absolute;
+      background:#D4AF37;
+      border-radius:50%;
+      animation:starTwinkle 3s ease-in-out infinite;
+    }
+    @keyframes starTwinkle {
+      0%,100%{opacity:0.2;transform:scale(1);}
+      50%{opacity:0.8;transform:scale(1.5);}
+    }
+    @keyframes starRotate {
+      from{transform:rotate(0deg);}
+      to{transform:rotate(360deg);}
+    }
+
+    /* Pulsing rings */
+    .pulse-ring {
+      position:absolute;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      border:1px solid rgba(212,175,55,0.15);
+      border-radius:50%;
+      animation:pulseRing 6s ease-out infinite;
+    }
+    @keyframes pulseRing {
+      0%{transform:translate(-50%,-50%) scale(0.8);opacity:0.5;}
+      100%{transform:translate(-50%,-50%) scale(2.5);opacity:0;}
+    }
+
+    /* Ember particles */
+    #ember-container .ember {
+      position:absolute;
+      width:3px;
+      height:3px;
+      border-radius:50%;
+      animation:emberFall linear infinite;
+      bottom:100%;
+    }
+    @keyframes emberFall {
+      0%{transform:translateY(0) translateX(0);opacity:0.8;}
+      100%{transform:translateY(110vh) translateX(30px);opacity:0;}
+    }
+  </style>
+
+  <script>
+    // Generate ember particles
+    (function(){
+      var container=document.getElementById('ember-container');
+      if(!container)return;
+      var colors=['#D4AF37','#FFD700','#FF6347','#DC143C','#B22222'];
+      for(var i=0;i<20;i++){
+        var e=document.createElement('div');
+        e.className='ember';
+        e.style.left=Math.random()*100+'%';
+        e.style.background=colors[Math.floor(Math.random()*colors.length)];
+        e.style.width=(2+Math.random()*3)+'px';
+        e.style.height=e.style.width;
+        e.style.animationDuration=(4+Math.random()*6)+'s';
+        e.style.animationDelay=Math.random()*8+'s';
+        container.appendChild(e);
+      }
+    })();
+  </script>
+
+
+
+  <style>
+    .float-kw {
+      position:absolute;
+      font-family:'Noto Serif SC',serif;
+      font-size:30px;
+      font-weight:700;
+      color:#D4AF37;
+      animation:floatKeyword 8s ease-in-out infinite;
+      text-shadow:0 0 30px rgba(212,175,55,0.5),0 2px 8px rgba(0,0,0,0.5);
+      white-space:nowrap;
+    }
+    @keyframes floatKeyword {
+      0%,100%{transform:translateY(0) rotate(-2deg);}
+      50%{transform:translateY(-12px) rotate(2deg);}
+    }
+  </style>
+
+
+
+  <!-- Main title -->
+  <div style="position:relative;z-index:1;text-align:center;">
+    <div style="font-family:'Noto Serif SC',serif;font-size:130px;font-weight:900;color:#D4AF37;letter-spacing:22px;text-shadow:0 0 60px rgba(212,175,55,0.3),0 0 120px rgba(192,57,43,0.15);opacity:0;animation:fadeScale .8s .5s forwards;">红轴</div>
+    <div style="margin-top:12px;font-family:'Noto Sans SC',sans-serif;font-size:13px;color:rgba(212,175,55,0.4);letter-spacing:8px;opacity:0;animation:fadeSlideDown .8s .8s forwards;">中国红色历史时空坐标</div>
+  </div>
+
+  <!-- Decorative divider -->
+  <div style="display:flex;align-items:center;gap:16px;margin-top:36px;opacity:0;animation:fadeSlideDown .8s 1.1s forwards;">
+    <div style="width:40px;height:1px;background:rgba(192,57,43,0.4);"></div>
+    <div style="width:6px;height:6px;border:1px solid rgba(192,57,43,0.5);transform:rotate(45deg);"></div>
+    <div style="width:40px;height:1px;background:rgba(192,57,43,0.4);"></div>
+  </div>
+
+  <!-- Subtitle -->
+  <div style="margin-top:28px;text-align:center;opacity:0;animation:fadeSlideDown .8s 1.3s forwards;">
+    <div style="font-family:'Noto Serif SC',serif;font-size:15px;color:rgba(253,246,227,0.6);letter-spacing:3px;line-height:2;">百年征程 · 千秋伟业</div>
+    <div style="font-family:'Noto Sans SC',sans-serif;font-size:11px;color:rgba(253,246,227,0.25);letter-spacing:2px;margin-top:6px;">100 coordinates · 1893 - 2022</div>
+  </div>
+
+  <!-- Enter button -->
+  <button id="cover-enter" style="margin-top:50px;background:none;border:1px solid rgba(192,57,43,0.5);color:rgba(253,246,227,0.7);padding:12px 44px;font-family:'Noto Sans SC',sans-serif;font-size:13px;cursor:pointer;letter-spacing:4px;transition:all .3s;position:relative;z-index:1;opacity:0;animation:fadeSlideDown .8s 1.6s forwards;" onmouseover="this.style.borderColor='#C0392B';this.style.color='#FDF6E3';this.style.background='rgba(192,57,43,0.15)';this.style.boxShadow='0 0 30px rgba(192,57,43,0.2)'" onmouseout="this.style.borderColor='rgba(192,57,43,0.5)';this.style.color='rgba(253,246,227,0.7)';this.style.background='none';this.style.boxShadow='none'">
+    踏入长河
+  </button>
+
+  <!-- Today badge (inside cover) -->
+  <div class="today-badge" id="todayBadge" onclick="openTodayPanel()" style="position:absolute;top:80px;right:24px;z-index:10">
+    <div class="today-badge-eyebrow">HISTORY TODAY</div>
+    <div class="today-badge-icon">📅</div>
+    <div class="today-badge-title" id="todayBadgeTitle">点击查看</div>
+    <div class="today-badge-year" id="todayBadgeYear"></div>
+    <div class="today-badge-hint">今日 · 历史上的这一天</div>
+  </div>
+
+  <!-- Scroll hint -->
+  <div style="position:absolute;bottom:40px;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;animation:fadeSlideDown .8s 2s forwards;">
+    <div style="font-size:10px;color:rgba(253,246,227,0.2);letter-spacing:3px;">SCROLL</div>
+    <div style="width:1px;height:20px;background:linear-gradient(rgba(212,175,55,0.4),transparent);animation:pulse 2s infinite;"></div>
+  </div>
+</div>
+
+<style>
+@keyframes fadeScale{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:0.3}50%{opacity:1}}
+</style>
+
+<script>
+// Particle effect for cover
+(function(){
+  var canvas=document.getElementById('cover-particles');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var particles=[];
+  var W,H;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<(window.innerWidth<768?20:60);i++){
+    particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.3,vx:(Math.random()-0.5)*0.3,vy:-Math.random()*0.4-0.1,a:Math.random()*0.3+0.05});
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<particles.length;i++){
+      var p=particles[i];
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.y<-10){p.y=H+10;p.x=Math.random()*W}
+      if(p.x<-10)p.x=W+10;if(p.x>W+10)p.x=-10;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(212,175,55,'+p.a+')';ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// Dismiss cover on click or scroll
+var coverEl=document.getElementById('cover');
+function dismissCover(){
+  if(coverEl.style.opacity==='0')return;
+  coverEl.style.opacity='0';
+  coverEl.style.transform='scale(1.05)';
+  setTimeout(function(){coverEl.style.display='none'},1000);
+  updateTodayBadge();
+}
+document.getElementById('cover-enter').addEventListener('click',dismissCover);
+window.addEventListener('wheel',function e(){dismissCover();window.removeEventListener('wheel',e)},{once:true});
+document.getElementById('cover').addEventListener('click',dismissCover);
+window.addEventListener('touchstart',function e(){dismissCover();window.removeEventListener('touchstart',e)},{once:true});
+
+// 移动端点击节点切换卡片显示
+function toggleEventCard(id) {
+  var nodes = document.querySelectorAll('.event-node');
+  var target = null;
+  nodes.forEach(function(n) {
+    var oc = n.getAttribute('onclick') || '';
+    if (oc && oc.indexOf('toggleEventCard(' + id) !== -1) target = n;
+    n.classList.remove('active');
+  });
+  if (activeEventId === id) {
+    activeEventId = null;
+    closeDetail();
+  } else {
+    activeEventId = id;
+    if (target) target.classList.add('active');
+    openDetail(id);
+  }
+}
+
+// Show cover (logo click)
+function showCover(){
+  var c=document.getElementById('cover');
+  if(!c)return;
+  c.style.display='flex';
+  c.style.opacity='1';
+  c.style.transform='scale(1)';
+  // Hide all views
+  document.getElementById('view-timeline').style.display='none';
+  document.getElementById('view-map').style.display='none';
+  document.getElementById('view-story').style.display='none';
+  document.getElementById('tab-timeline').classList.remove('active');
+  document.getElementById('tab-map').classList.remove('active');
+  document.getElementById('tab-story').classList.remove('active');
+}
+</script>
+
+
+
+<!-- HEADER -->
+<header>
+  <div class="logo" onclick="showCover()" title="返回封面">
+    <svg viewBox="0 0 32 32" fill="none"><polygon points="16,2 19.5,12 30,12 21.5,18.5 24.5,29 16,23 7.5,29 10.5,18.5 2,12 12.5,12" fill="#C0392B" stroke="#D4AF37" stroke-width=".5"/></svg>
+    <div>
+      <div class="logo-text">红 轴</div>
+      <div class="logo-sub">中国红色历史时空坐标</div>
+    </div>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tab-timeline" onclick="switchTab('timeline')">时间轴</button>
+    <button class="tab-btn" id="tab-map" onclick="switchTab('map')">空间轴</button>
+    <button class="tab-btn" id="tab-story" onclick="switchTab('story')">主线</button>
+    <button class="tab-btn" id="tab-figures" onclick="switchTab('figures')">人物</button>
+  </div>
+
+  <div class="nav-right">
+    <div class="stat-pill">
+      <span>地点 <strong id="gPlaces">0</strong></span>
+      <span>事件 <strong id="gEvents">0</strong></span>
+      <span>省份 <strong id="gProvinces">0</strong></span>
+    </div>
+    <button class="btn-contribute" onclick="alert('投稿功能正在开发中，敬请期待！')">+ 投稿</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TIMELINE VIEW -->
+  <div class="timeline-view" id="view-timeline">
+    <div class="timeline-filters">
+      <span class="f-label">时期</span>
+      <button class="f-btn active" data-filter="all" onclick="tlFilter(this,'all')">全部</button>
+      <button class="f-btn" data-filter="建党" onclick="tlFilter(this,'建党')">建党</button>
+      <button class="f-btn" data-filter="土地革命" onclick="tlFilter(this,'土地革命')">土地革命</button>
+      <button class="f-btn" data-filter="抗战" onclick="tlFilter(this,'抗战')">抗战</button>
+      <button class="f-btn" data-filter="解放" onclick="tlFilter(this,'解放')">解放</button>
+      <button class="f-btn" data-filter="建设" onclick="tlFilter(this,'建设')">建国后</button>
+      <div class="f-divider"></div>
+      <span class="f-label">精度</span>
+      <button class="f-btn active" id="zoom-level" onclick="cycleZoom()">世纪</button>
+    </div>
+
+    <div class="timeline-scroll" id="tlScroll" onmousedown="startDrag(event)" ontouchstart="startDrag(event)">
+      <div class="timeline-inner" id="tlInner">
+        <div class="axis-glow"></div>
+        <div class="axis-line"></div>
+        <div class="era-labels" id="eraLabels"></div>
+        <div id="eventsContainer"></div>
+      </div>
+    </div>
+
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="changeZoom(-1)">-</button>
+      <button class="zoom-btn" onclick="changeZoom(1)">+</button>
+    </div>
+
+    <div class="timeline-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#C0392B"></div>重大事件</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#D4AF37"></div>里程碑</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#27AE60"></div>革命根据地</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#5DADE2"></div>纪念馆/英雄</div>
+    </div>
+  </div>
+
+  <!-- MAP VIEW -->
+  <div class="map-view" id="view-map" style="display:none">
+    <div class="map-filters">
+      <span class="f-label">时期</span>
+      <button class="f-btn active" data-mfilter="all" onclick="mapFilterEra(this,'all')">全部</button>
+      <button class="f-btn" data-mfilter="建党" onclick="mapFilterEra(this,'建党')">建党</button>
+      <button class="f-btn" data-mfilter="土地革命" onclick="mapFilterEra(this,'土地革命')">土地革命</button>
+      <button class="f-btn" data-mfilter="抗战" onclick="mapFilterEra(this,'抗战')">抗战</button>
+      <button class="f-btn" data-mfilter="解放" onclick="mapFilterEra(this,'解放')">解放</button>
+      <button class="f-btn" data-mfilter="建设" onclick="mapFilterEra(this,'建设')">建国后</button>
+      <div class="f-divider"></div>
+      <span class="f-label">类型</span>
+      <button class="f-btn active" data-mtype="all" onclick="mapFilterType(this,'all')">全部</button>
+      <button class="f-btn" data-mtype="重大事件" onclick="mapFilterType(this,'重大事件')">重大事件</button>
+      <button class="f-btn" data-mtype="根据地" onclick="mapFilterType(this,'根据地')">根据地</button>
+      <button class="f-btn" data-mtype="纪念馆" onclick="mapFilterType(this,'纪念馆')">纪念馆</button>
+      <div class="f-divider"></div>
+      <button class="f-btn" id="mapView-scatter" onclick="mapSetView('scatter')">散点</button>
+      <button class="f-btn" id="mapView-heatmap" onclick="mapSetView('heatmap')">省份热力</button>
+      <div class="f-divider"></div>
+      <button class="f-btn" id="mapRoute-cz" onclick="mapToggleRoute('cz')">长征路线</button>
+      <button class="f-btn" id="mapRoute-ya" onclick="mapToggleRoute('ya')">延安路线</button>
+    </div>
+
+    <div class="map-main">
+      <div class="province-sidebar">
+        <div class="sb-title">省份分布</div>
+        <div id="provinceList"></div>
+      </div>
+      <div style="flex:1;position:relative">
+        <div id="chart"></div>
+
+        <div class="ctrl-stack">
+          <button class="ctrl-btn active" id="ctrl-scatter" onclick="mapSetView('scatter')">散点图</button>
+          <button class="ctrl-btn" id="ctrl-heatmap" onclick="mapSetView('heatmap')">省份热力</button>
+          <div class="ctrl-sep"></div>
+          <button class="ctrl-btn" id="ctrl-cz" onclick="mapToggleRoute('cz')">长征</button>
+          <button class="ctrl-btn" id="ctrl-ya" onclick="mapToggleRoute('ya')">延安</button>
+          <div class="ctrl-sep"></div>
+          <button class="ctrl-btn" onclick="mapReset()">重置</button>
+        </div>
+
+        <div class="map-legend">
+          <div class="legend-title">图例</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#C0392B"></div><span>重大事件</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#D4AF37"></div><span>里程碑</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#27AE60"></div><span>革命根据地</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#5DADE2"></div><span>纪念馆</span></div>
+        </div>
+
+        <div class="map-stats">
+          <div class="stat"><span class="stat-num" id="mPlaces">0</span><span class="stat-label">地点</span></div>
+          <div class="stat"><span class="stat-num" id="mProvinces">0</span><span class="stat-label">省份</span></div>
+          <div class="stat"><span class="stat-num" id="mBases">0</span><span class="stat-label">圣地</span></div>
+        </div>
+
+        <div class="info-panel" id="mapInfoPanel">
+          <div class="info-hdr">
+            <span class="info-hdr-title">红色坐标</span>
+            <button class="info-close" onclick="mapCloseInfo()">X</button>
+          </div>
+          <div id="mapInfoContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STORY VIEW -->
+  <div class="story-view" id="view-story" style="display:none">
+    <div class="story-header">
+      <div class="story-header-inner">
+        <div class="story-eyebrow">NARRATIVE THREAD</div>
+        <div class="story-title">百年征程 · 叙事主线</div>
+        <div class="story-subtitle">从兴业路76号到民族复兴，八个篇章，一条主线</div>
+      </div>
+    </div>
+    <div class="story-scroll" id="storyScroll">
+      <div class="story-container" id="storyContainer">
+        <!-- Chapters injected by JS -->
+      </div>
+    </div>
+    <div class="story-chapter-nav" id="storyNav"></div>
+  </div>
+</div>
+
+<!-- FIGURES VIEW -->
+<div class="figures-view" id="view-figures" style="display:none">
+  <div class="figures-filter-bar">
+    <span class="f-label">筛选</span>
+    <button class="f-btn active" data-figfilter="all" onclick="figFilter(this,'all')">全部</button>
+    <button class="f-btn" data-figfilter="建党" onclick="figFilter(this,'建党')">建党</button>
+    <button class="f-btn" data-figfilter="将帅" onclick="figFilter(this,'将帅')">将帅</button>
+    <button class="f-btn" data-figfilter="外交" onclick="figFilter(this,'外交')">外交</button>
+    <button class="f-btn" data-figfilter="建设" onclick="figFilter(this,'建设')">建设</button>
+  </div>
+  <div class="figures-grid" id="figuresGrid"></div>
+</div>
+
+<!-- FIGURE DETAIL OVERLAY -->
+<div class="figure-detail-overlay" id="figureDetailOverlay">
+  <div class="figure-detail-inner" id="figureDetailContent"></div>
+</div>
+
+<!-- TODAY PANEL -->
+<div class="today-panel" id="todayPanel">
+  <div class="today-panel-inner">
+    <div class="today-panel-back" onclick="closeTodayPanel()">← 返回</div>
+    <div class="today-panel-hint" id="todayPanelHint" onclick="pinTodayPanel()">
+      <span class="today-panel-hint-dot"></span>
+      <span class="today-panel-hint-text">点击任意处继续阅读 · 10秒后自动收起</span>
+    </div>
+    <div class="today-panel-eyebrow">HISTORICAL EVENTS ON THIS DAY</div>
+    <div class="today-panel-date">6月12日</div>
+    <div class="today-panel-sub">这些历史，曾发生在今天</div>
+    <div class="today-events-list" id="todayEventsList"></div>
+  </div>
+</div>
+
+<!-- DETAIL OVERLAY -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-inner" id="detailContent"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const redData = [
+  {id:1,name:"中共一大·上海",year:"1921",era:"建党",type:"重大事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"中国共产党第一次全国代表大会",desc:"1921年7月23日，中共一大在上海秘密召开，宣告中国共产党正式成立。",quote:"中国共产党的成立，是中国历史上开天辟地的大事变。",color:"gold",x:"1921"},
+  {id:2,name:"南湖红船",year:"1921",era:"建党",type:"重大事件",place:"浙江·嘉兴",province:"浙江",lng:120.15,lat:30.27,title:"南湖红船",desc:"中共一大最后一天的会议转移到浙江嘉兴南湖的一艘游船上完成。",quote:"革命声传画舫中，诞生共党庆工农。",color:"gold",x:"1921"},
+  {id:3,name:"南昌起义总指挥部",year:"1927",era:"建党",type:"重大事件",place:"江西·南昌",province:"江西",lng:115.86,lat:28.68,title:"南昌起义",desc:"1927年8月1日，周恩来、贺龙、叶挺、朱德等领导南昌起义，打响武装反抗的第一枪。",quote:"枪杆子里面出政权。",color:"red",x:"1927"},
+  {id:4,name:"井冈山革命根据地",year:"1927",era:"土地革命",type:"根据地",place:"江西·井冈山",province:"江西",lng:114.19,lat:27.8,title:"井冈山革命根据地",desc:"毛泽东创建的中国第一个农村革命根据地，开辟了农村包围城市的革命道路。",quote:"星星之火，可以燎原。",color:"green",x:"1927"},
+  {id:5,name:"公车上书",year:"1895",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"维新变法的开端",desc:"1895年4月，康有为联合1300多名举人联名上书光绪帝，反对签订《马关条约》，史称公车上书，标志着维新变法运动的开始。",quote:"以死报国，请拒和议。",color:"red",x:"1895"},
+  {id:6,name:"四渡赤水",year:"1935",era:"土地革命",type:"重大事件",place:"贵州·习水",province:"贵州",lng:105.99,lat:28.43,title:"四渡赤水",desc:"1935年，毛泽东指挥中央红军四渡赤水河，巧妙穿插于敌军重兵之间。",quote:"毛主席用兵真如神！",color:"red",x:"1935"},
+  {id:7,name:"强渡大渡河",year:"1935",era:"土地革命",type:"重大事件",place:"四川·石棉",province:"四川",lng:102.05,lat:30.05,title:"强渡大渡河",desc:"1935年5月，红一团17名勇士强渡大渡河，为红军北上打开了胜利通道。",quote:"大渡桥横铁索寒。",color:"red",x:"1935"},
+  {id:8,name:"飞夺泸定桥",year:"1935",era:"土地革命",type:"重大事件",place:"四川·泸定",province:"四川",lng:103.35,lat:29.59,title:"飞夺泸定桥",desc:"1935年5月29日，红四团22名勇士在铁索桥上冒死冲锋，夺取泸定桥。",quote:"红军都是钢铁汉，千锤百炼不怕难。",color:"red",x:"1935"},
+  {id:9,name:"长征·翻越雪山",year:"1935",era:"土地革命",type:"重大事件",place:"四川·甘孜",province:"四川",lng:97.17,lat:31.16,title:"长征·翻越雪山草地",desc:"中央红军长征途中翻越了夹金山等多座大雪山，穿过人迹罕至的松潘草地。",quote:"红军不怕远征难，万水千山只等闲。",color:"red",x:"1935"},
+  {id:10,name:"延安革命圣地",year:"1935",era:"土地革命",type:"根据地",place:"陕西·延安",province:"陕西",lng:109.49,lat:36.6,title:"延安革命圣地",desc:"1935年至1948年，延安是中共中央所在地，被誉为革命圣地。",quote:"自己动手，丰衣足食。",color:"gold",x:"1935"},
+  {id:11,name:"同盟会成立",year:"1905",era:"近代史",type:"重大事件",place:"日本东京",province:"北京",lng:116.4,lat:39.91,title:"第一个全国性资产阶级革命政党",desc:"1905年8月20日，孙中山在日本东京成立中国同盟会，以驱除鞑虏、恢复中华、建立民国、平均地权为纲领。",quote:"民族、民权、民生。",color:"red",x:"1905"},
+  {id:12,name:"南泥湾",year:"1941",era:"土地革命",type:"纪念馆",place:"陕西·延安",province:"陕西",lng:109.42,lat:36.0,title:"南泥湾大生产运动",desc:"1941年，八路军359旅在南泥湾开展大生产运动，实现了自给自足。",quote:"又学习来又生产，三五九旅是模范。",color:"blue",x:"1941"},
+  {id:13,name:"萍浏醴起义",year:"1906",era:"近代史",type:"重大事件",place:"江西萍乡",province:"江西",lng:113.85,lat:27.63,title:"同盟会领导的第一次武装起义",desc:"1906年12月，同盟会会员刘道一在江西萍乡、浏阳、醴陵发动起义，虽很快失败，但这是同盟会成立后第一次大规模的武装斗争。",quote:"起义虽败，精神不死。",color:"red",x:"1906"},
+  {id:14,name:"湘江战役",year:"1934",era:"土地革命",type:"重大事件",place:"广西·全州",province:"广西",lng:110.3,lat:25.75,title:"湘江战役",desc:"1934年11月，中央红军在广西全州与敌军激战，是长征中损失最惨重的一战。",quote:"三年不饮湘江水，十年不食湘江鱼。",color:"red",x:"1934"},
+  {id:15,name:"平型关大捷遗址",year:"1937",era:"抗战",type:"重大事件",place:"山西·灵丘",province:"山西",lng:113.87,lat:39.46,title:"平型关大捷",desc:"1937年9月25日，八路军115师在平型关伏击日军，歼敌千余人，是全面抗战以来的第一个大胜仗。",quote:"首战平型关，威名天下扬。",color:"red",x:"1937"},
+  {id:16,name:"百团大战纪念馆",year:"1940",era:"抗战",type:"纪念馆",place:"山西·阳泉",province:"山西",lng:111.51,lat:36.67,title:"百团大战",desc:"1940年8月，八路军在华北发动百团大战，历时3个半月，歼敌2.5万余人。",quote:"百团大战，敌后战场显神威。",color:"blue",x:"1940"},
+  {id:17,name:"保路运动",year:"1911",era:"近代史",type:"重大事件",place:"四川",province:"四川",lng:104.06,lat:30.67,title:"辛亥革命的导火索",desc:"1911年，四川人民掀起保路运动，反对清政府将路权出卖给帝国主义，这是辛亥革命的重要先导事件。",quote:"四川人民誓死争回路权。",color:"red",x:"1911"},
+  {id:18,name:"皖南事变发生地",year:"1941",era:"抗战",type:"重大事件",place:"安徽·泾县",province:"安徽",lng:116.46,lat:31.82,title:"皖南事变",desc:"1941年1月，新四军9000余人在安徽茂林遭国民党军围攻，激战七昼夜。",quote:"千古奇冤，江南一叶。",color:"red",x:"1941"},
+  {id:19,name:"八国联军侵华",year:"1900",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"近代中国的深重灾难",desc:"1900年，英、美、俄、日、法、德、意、奥八国联军入侵北京，焚毁圆明园，迫使清政府签订《辛丑条约》。",quote:"落后就要挨打。",color:"red",x:"1900"},
+  {id:20,name:"《辛丑条约》签订",year:"1901",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"近代最屈辱的不平等条约",desc:"1901年9月，清政府与11国签订《辛丑条约》，赔款4.5亿两白银，允许外国军队驻扎北京，中国完全沦为半殖民地。",quote:"国家危难，民族危亡。",color:"red",x:"1901"},
+  {id:21,name:"西南联大旧址",year:"1937",era:"抗战",type:"纪念馆",place:"云南·昆明",province:"云南",lng:102.71,lat:25.04,title:"西南联大旧址",desc:"1937年，北京大学、清华大学、南开大学南迁昆明组建西南联大。",quote:"刚毅坚卓。",color:"blue",x:"1937"},
+  {id:22,name:"《警世钟》发表",year:"1903",era:"近代史",type:"重大事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"陈天华呼唤民族觉醒",desc:"1903年，陈天华发表《警世钟》，以激昂的文字呼唤民族觉醒，痛陈列强瓜分中国的危机，号召国民起来反抗。",quote:"或战或守或死或逃或为奴隶或为主人。",color:"red",x:"1903"},
+  {id:23,name:"台儿庄战役纪念馆",year:"1938",era:"抗战",type:"纪念馆",place:"山东·枣庄",province:"山东",lng:114.52,lat:35.87,title:"台儿庄战役纪念馆",desc:"1938年3月至4月，中国军队在台儿庄与日军展开激战，歼敌万余人。",quote:"台儿庄大捷！",color:"blue",x:"1938"},
+  {id:24,name:"徐锡麟安庆起义",year:"1907",era:"近代史",type:"重大事件",place:"安徽安庆",province:"安徽",lng:117.03,lat:30.52,title:"反清志士的壮烈牺牲",desc:"1907年7月6日，光复会会员徐锡麟在安徽安庆发动起义，击杀清廷官员数十人，后兵败被俘，从容就义。",quote:"为光复我祖国而死，虽死犹荣。",color:"red",x:"1907"},
+  {id:25,name:"秋瑾就义",year:"1907",era:"近代史",type:"重大事件",place:"浙江绍兴",province:"浙江",lng:120.58,lat:30.0,title:"巾帼英雄慷慨赴死",desc:"1907年7月15日，秋瑾在绍兴轩亭口被清政府杀害，年仅31岁。她是中国近代女性革命者的杰出代表。",quote:"秋风秋雨愁煞人。",color:"red",x:"1907"},
+  {id:26,name:"西柏坡纪念馆",year:"1948",era:"解放",type:"纪念馆",place:"河北·平山",province:"河北",lng:114.51,lat:38.04,title:"西柏坡纪念馆",desc:"1948年5月至1949年3月，中共中央移驻西柏坡，在此指挥了三大战役。",quote:"新中国从这里走来。",color:"gold",x:"1948"},
+  {id:27,name:"光绪帝驾崩",year:"1908",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"维新志士的庇护者离世",desc:"1908年11月14日，光绪帝驾崩次日，慈禧太后亦病逝。光绪帝在位期间支持戊戌变法，是中国近代变革的标志性人物。",quote:"朕为变法而死，死得其所。",color:"red",x:"1908"},
+  {id:28,name:"天安门广场",year:"1949",era:"解放",type:"重大事件",place:"北京",province:"北京",lng:116.39,lat:39.91,title:"开国大典",desc:"1949年10月1日，毛泽东在天安门城楼上庄严宣告中华人民共和国中央人民政府成立。",quote:"中国人民站起来了！",color:"gold",x:"1949"},
+  {id:29,name:"渡江战役纪念馆",year:"1949",era:"解放",type:"纪念馆",place:"江苏·南京",province:"江苏",lng:118.8,lat:32.06,title:"渡江战役纪念馆",desc:"1949年4月，人民解放军发起渡江战役，迅速解放南京。",quote:"打过长江去，解放全中国！",color:"blue",x:"1949"},
+  {id:30,name:"宣统帝登基",year:"1909",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"清朝最后一位皇帝",desc:"1909年3月，末代皇帝溥仪在太和殿举行登基大典，年号宣统。溥仪是中国历史上最后一位封建皇帝。",quote:"清朝最后的余晖。",color:"red",x:"1909"},
+  {id:31,name:"汪精卫刺杀摄政王",year:"1910",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"革命党人的暗杀行动",desc:"1910年4月，革命党人汪精卫、黄复生在北京什刹海银锭桥试图刺杀摄政王载沣，事泄被捕，展现了革命者的勇气。",quote:"引刀成一快，不负少年头。",color:"red",x:"1910"},
+  {id:32,name:"罗布泊·第一颗原子弹",year:"1964",era:"建设",type:"重大事件",place:"新疆·罗布泊",province:"新疆",lng:86.16,lat:41.81,title:"第一颗原子弹爆炸成功",desc:"1964年10月16日，中国第一颗原子弹在新疆罗布泊爆炸成功，打破了超级大国的核垄断。",quote:"东方巨响，震惊世界。",color:"red",x:"1964"},
+  {id:33,name:"两弹一星·金银滩",year:"1964",era:"建设",type:"纪念馆",place:"青海·海晏",province:"青海",lng:101.78,lat:36.65,title:"两弹一星基地",desc:"位于青海省海晏县金银滩，是我国第一个核武器研制基地。",quote:"干惊天动地事，做隐姓埋名人。",color:"blue",x:"1964"},
+  {id:34,name:"抗美援朝烈士陵园",year:"1950",era:"建设",type:"纪念馆",place:"辽宁·沈阳",province:"辽宁",lng:123.43,lat:41.72,title:"抗美援朝烈士陵园",desc:"安葬着黄继光、邱少云等志愿军烈士，是全国爱国主义教育示范基地。",quote:"青山处处埋忠骨。",color:"blue",x:"1950"},
+  {id:35,name:"戊戌六君子就义",year:"1898",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"维新运动的悲壮落幕",desc:"1898年9月28日，谭嗣同、林旭、杨锐、杨深秀、刘光第、康广仁六人在北京菜市口被处死，史称戊戌六君子。",quote:"有心杀贼，无力回天，死得其所，快哉快哉。",color:"red",x:"1898"},
+  {id:36,name:"火烧赵家楼",year:"1919",era:"近代史",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"五四运动的激进行动",desc:"1919年5月4日，北京学生游行至赵家楼曹汝霖住宅，痛打章宗祥，火烧其宅，抗议巴黎和会上中国外交失败。",quote:"外争主权，内除国贼。",color:"red",x:"1919"},
+  {id:37,name:"深圳经济特区",year:"1980",era:"建设",type:"重大事件",place:"广东·深圳",province:"广东",lng:114.06,lat:22.54,title:"深圳经济特区",desc:"1980年8月，深圳经济特区正式成立，成为中国改革开放的重要窗口。",quote:"春天的故事。",color:"gold",x:"1980"},
+  {id:38,name:"小岗村",year:"1978",era:"建设",type:"重大事件",place:"安徽·凤阳",province:"安徽",lng:117.21,lat:31.83,title:"小岗村大包干",desc:"1978年冬，小岗村18户农民秘密按下手印，实行大包干，拉开了中国农村改革的序幕。",quote:"大包干是农民的一个伟大创造。",color:"gold",x:"1978"},
+  {id:39,name:"孙中山成立兴中会",year:"1894",era:"近代史",type:"重大事件",place:"檀香山",province:"广东",lng:113.26,lat:23.13,title:"中国资产阶级民主革命的开端",desc:"1894年11月24日，孙中山在檀香山创立兴中会，这是中国第一个资产阶级革命团体，提出了推翻清朝、建立共和的目标。",quote:"驱除鞑虏，恢复中华。",color:"red",x:"1894"},
+  {id:40,name:"G20杭州峰会",year:"2016",era:"建设",type:"重大事件",place:"浙江·杭州",province:"浙江",lng:120.16,lat:30.28,title:"G20杭州峰会",desc:"2016年9月，G20峰会在杭州成功举办，彰显了中国在国际舞台上的大国地位。",quote:"弄潮儿向涛头立。",color:"red",x:"2016"},
+  {id:41,name:"北京冬奥会",year:"2022",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.39,lat:39.91,title:"北京冬奥会",desc:"2022年，北京成为世界上首个举办过夏季和冬季奥运会的城市。",quote:"一起向未来！",color:"gold",x:"2022"},
+  {id:42,name:"京汉铁路工人大罢工",year:"1923",era:"建党时期",type:"重大事件",place:"河南郑州",province:"河南",lng:113.65,lat:34.76,title:"二七惨案",desc:"1923年2月7日，京汉铁路工人在郑州举行大罢工，遭到军阀吴佩孚的血腥镇压，林祥谦、施洋等工人领袖惨遭杀害。",quote:"头可断，血可流，工不可复。",color:"red",x:"1923"},
+  {id:43,name:"港珠澳大桥",year:"2018",era:"建设",type:"重大事件",place:"广东·珠海",province:"广东",lng:114.17,lat:22.33,title:"港珠澳大桥",desc:"2018年10月，港珠澳大桥正式开通，是世界上最长的跨海大桥。",quote:"超级工程，民族骄傲。",color:"gold",x:"2018"},
+  {id:44,name:"台湾光复",year:"1945",era:"解放",type:"重大事件",place:"台湾·台北",province:"台湾",lng:121.56,lat:25.04,title:"台湾光复",desc:"1945年日本战败投降，台湾回归祖国怀抱，洗雪了五十年民族之耻辱。",quote:"还我河山！",color:"red",x:"1945"},
+  {id:45,name:"五四运动",year:"1919",era:"新民主主义革命时期",type:"重大事件",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"五四运动",desc:"1919年5月4日，北京学生发起了反帝反封建的爱国运动，标志着新民主主义革命的开端。",quote:"外争主权，内除国贼",color:"gold",x:"1919"},
+  {id:46,name:"《新青年》创刊",year:"1915",era:"新民主主义革命时期",type:"文化事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"《新青年》创刊",desc:"1915年9月，陈独秀在上海创办《青年杂志》，后改名《新青年》，掀起新文化运动。",quote:"敬告青年",color:"purple",x:"1915"},
+  {id:47,name:"京汉铁路工人大罢工",year:"1923",era:"新民主主义革命时期",type:"工人运动",place:"湖北武汉",province:"湖北",lng:114.31,lat:30.58,title:"京汉铁路工人大罢工",desc:"1923年2月，京汉铁路工人举行大罢工，是中国共产党领导的第一次工人运动高潮。",quote:"为自由而战",color:"blue",x:"1923"},
+  {id:48,name:"省港大罢工",year:"1925",era:"新民主主义革命时期",type:"工人运动",place:"广东广州",province:"广东",lng:113.26,lat:23.13,title:"省港大罢工",desc:"1925年6月，广州和香港工人举行大罢工，持续16个月，是世界工人运动史上时间最长的罢工。",quote:"团结就是力量",color:"blue",x:"1925"},
+  {id:49,name:"南昌起义",year:"1927",era:"新民主主义革命时期",type:"武装起义",place:"江西南昌",province:"江西",lng:115.86,lat:28.68,title:"南昌起义",desc:"1927年8月1日，周恩来等领导南昌起义，打响了武装反抗国民党反动派的第一枪。",quote:"枪杆子里出政权",color:"red",x:"1927"},
+  {id:50,name:"重庆谈判",year:"1945",era:"解放战争时期",type:"重大事件",place:"重庆",province:"重庆",lng:106.55,lat:29.56,title:"重庆谈判",desc:"1945年8月，毛泽东赴重庆与国民党谈判，争取和平建国。",quote:"一切反动派都是纸老虎",color:"gold",x:"1945"},
+  {id:51,name:"兰州战役",year:"1949",era:"解放战争时期",type:"军事战役",place:"甘肃兰州",province:"甘肃",lng:103.83,lat:36.07,title:"兰州战役",desc:"1949年8月，人民解放军解放兰州，标志着西北解放战争的胜利。",quote:"解放大西北",color:"red",x:"1949"},
+  {id:52,name:"新疆和平解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"新疆乌鲁木齐",province:"新疆",lng:87.62,lat:43.77,title:"新疆和平解放",desc:"1949年9月，新疆和平解放，五星红旗在天山南北飘扬。",quote:"各族人民大团结",color:"gold",x:"1949"},
+  {id:53,name:"西藏和平解放",year:"1951",era:"社会主义革命和建设时期",type:"重大事件",place:"西藏拉萨",province:"西藏",lng:91.12,lat:29.65,title:"西藏和平解放",desc:"1951年5月，西藏和平解放，雪域高原迎来新生。",quote:"洁白的哈达献给党",color:"gold",x:"1951"},
+  {id:54,name:"开国大典",year:"1949",era:"新中国成立",type:"重大事件",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"开国大典",desc:"1949年10月1日，毛泽东在天安门城楼宣告中华人民共和国成立。",quote:"中国人民从此站起来了",color:"gold",x:"1949"},
+  {id:55,name:"西柏坡会议",year:"1949",era:"新中国成立",type:"重要会议",place:"河北平山",province:"河北",lng:114.51,lat:38.04,title:"西柏坡七届二中全会",desc:"1949年3月，中共中央在西柏坡召开七届二中全会，描绘新中国蓝图。",quote:"两个务必",color:"purple",x:"1949"},
+  {id:56,name:"辽沈战役",year:"1948",era:"解放战争时期",type:"军事战役",place:"辽宁沈阳",province:"辽宁",lng:123.43,lat:41.8,title:"辽沈战役",desc:"1948年9月至11月，辽沈战役歼敌47万，解放东北全境。",quote:"关门打狗",color:"red",x:"1948"},
+  {id:57,name:"淮海战役",year:"1948",era:"解放战争时期",type:"军事战役",place:"江苏徐州",province:"江苏",lng:117.19,lat:34.27,title:"淮海战役",desc:"1948年11月至1949年1月，淮海战役歼敌55万，是三大战役中规模最大的一次。",quote:"小推车推出来的胜利",color:"red",x:"1948"},
+  {id:58,name:"平津战役",year:"1948",era:"解放战争时期",type:"军事战役",place:"天津",province:"天津",lng:117.2,lat:39.13,title:"平津战役",desc:"1948年11月至1949年1月，平津战役和平解放北平，解放华北。",quote:"北平方式",color:"red",x:"1948"},
+  {id:59,name:"南京解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"江苏南京",province:"江苏",lng:118.8,lat:32.06,title:"南京解放",desc:"1949年4月23日，人民解放军占领南京总统府，宣告国民党统治覆灭。",quote:"钟山风雨起苍黄",color:"gold",x:"1949"},
+  {id:60,name:"东北抗日联军",year:"1931",era:"抗日战争时期",type:"武装斗争",place:"黑龙江哈尔滨",province:"黑龙江",lng:126.63,lat:45.75,title:"东北抗日联军",desc:"1931年九一八事变后，东北抗日联军坚持敌后抗战14年。",quote:"火烤胸前暖，风吹背后寒",color:"red",x:"1931"},
+  {id:61,name:"重庆红岩村",year:"1938",era:"抗日战争时期",type:"革命遗址",place:"重庆",province:"重庆",lng:106.55,lat:29.56,title:"重庆红岩村",desc:"抗日战争时期，中共中央南方局驻重庆红岩村，领导国统区抗日民主运动。",quote:"红岩精神",color:"purple",x:"1938"},
+  {id:62,name:"兰州战役纪念馆",year:"1949",era:"解放战争时期",type:"纪念设施",place:"甘肃兰州",province:"甘肃",lng:103.83,lat:36.07,title:"兰州战役纪念馆",desc:"为纪念兰州战役而建，弘扬革命先烈英勇事迹。",quote:"人民英雄永垂不朽",color:"purple",x:"1949"},
+  {id:63,name:"武汉长江大桥通车",year:"1957",era:"社会主义革命和建设时期",type:"建设成就",place:"湖北武汉",province:"湖北",lng:114.32,lat:30.51,title:"武汉长江大桥通车",desc:"1957年10月，武汉长江大桥通车，一桥飞架南北，天堑变通途。",quote:"一桥飞架南北",color:"blue",x:"1957"},
+  {id:64,name:"大庆油田",year:"1959",era:"社会主义革命和建设时期",type:"建设成就",place:"黑龙江大庆",province:"黑龙江",lng:126.53,lat:45.8,title:"大庆油田发现",desc:"1959年9月，大庆油田发现，甩掉中国贫油落后的帽子。",quote:"铁人精神",color:"blue",x:"1959"},
+  {id:65,name:"金山卫登陆",year:"1937",era:"抗日战争时期",type:"军事事件",place:"上海金山",province:"上海",lng:121.47,lat:31.1,title:"日军金山卫登陆",desc:"1937年11月，日军在金山卫登陆，上海沦陷。",quote:"勿忘国耻",color:"gray",x:"1937"},
+  {id:66,name:"卢沟桥事变",year:"1937",era:"抗日战争时期",type:"重大事件",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"卢沟桥事变",desc:"1937年7月7日，日军炮轰卢沟桥，全国抗日战争爆发。",quote:"宁为战死鬼，不做亡国奴",color:"red",x:"1937"},
+  {id:67,name:"淞沪会战",year:"1937",era:"抗日战争时期",type:"军事战役",place:"上海",province:"上海",lng:120.15,lat:30.27,title:"淞沪会战",desc:"1937年8月至11月，淞沪会战是中国军队抗击日军的大规模战役。",quote:"寸土必争",color:"red",x:"1937"},
+  {id:68,name:"西安事变",year:"1936",era:"抗日战争时期",type:"重大事件",place:"陕西西安",province:"陕西",lng:108.95,lat:34.27,title:"西安事变",desc:"1936年12月12日，张学良、杨虎城兵谏蒋介石，促成国共第二次合作。",quote:"停止内战，一致抗日",color:"gold",x:"1936"},
+  {id:69,name:"兰州空战",year:"1937",era:"抗日战争时期",type:"军事事件",place:"甘肃兰州",province:"甘肃",lng:103.83,lat:36.07,title:"兰州空战",desc:"1937年至1945年，兰州空战击落大量日机，保卫西北领空。",quote:"碧血蓝天",color:"blue",x:"1937"},
+  {id:70,name:"临沂战役",year:"1938",era:"抗日战争时期",type:"军事战役",place:"山东临沂",province:"山东",lng:118.35,lat:35.05,title:"临沂战役",desc:"1938年2月至4月，临沂战役是台儿庄战役的重要组成部分。",quote:"血战台儿庄",color:"red",x:"1938"},
+  {id:71,name:"四行仓库保卫战",year:"1937",era:"抗日战争时期",type:"军事战役",place:"上海",province:"上海",lng:121.47,lat:31.3,title:"四行仓库保卫战",desc:"1937年10月，八百壮士坚守四行仓库，震惊中外。",quote:"八百壮士",color:"red",x:"1937"},
+  {id:72,name:"一二九运动",year:"1935",era:"新民主主义革命时期",type:"学生运动",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"一二九运动",desc:"1935年12月9日，北平学生举行抗日救国示威游行。",quote:"华北之大，已安放不下一张平静的书桌",color:"purple",x:"1935"},
+  {id:73,name:"西安事变纪念馆",year:"1936",era:"抗日战争时期",type:"纪念设施",place:"陕西西安",province:"陕西",lng:108.95,lat:34.26,title:"西安事变纪念馆",desc:"纪念西安事变而建，位于张学良公馆旧址。",quote:"民族大义",color:"purple",x:"1936"},
+  {id:74,name:"遵义会议",year:"1935",era:"新民主主义革命时期",type:"重要会议",place:"贵州遵义",province:"贵州",lng:106.83,lat:27.79,title:"遵义会议",desc:"1935年1月，遵义会议确立了毛泽东在党中央的领导地位。",quote:"生死攸关的转折点",color:"gold",x:"1935"},
+  {id:75,name:"台北光复",year:"1945",era:"解放战争时期",type:"重大事件",place:"台湾台北",province:"台湾",lng:121.56,lat:25.04,title:"台北光复",desc:"1945年10月，台湾光复，回归祖国怀抱。",quote:"还我河山",color:"gold",x:"1945"},
+  {id:76,name:"福州战役",year:"1949",era:"解放战争时期",type:"军事战役",place:"福建福州",province:"福建",lng:119.3,lat:26.08,title:"福州战役",desc:"1949年8月，人民解放军解放福州。",quote:"解放福建",color:"red",x:"1949"},
+  {id:77,name:"广州解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"广东广州",province:"广东",lng:113.26,lat:23.13,title:"广州解放",desc:"1949年10月，广州解放，华南解放战争胜利。",quote:"五羊城新生",color:"gold",x:"1949"},
+  {id:78,name:"长沙解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"湖南长沙",province:"湖南",lng:112.94,lat:28.18,title:"长沙解放",desc:"1949年8月，长沙和平解放。",quote:"三湘大地换新天",color:"gold",x:"1949"},
+  {id:79,name:"武汉解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"湖北武汉",province:"湖北",lng:114.27,lat:30.57,title:"武汉解放",desc:"1949年5月，武汉解放，华中重镇回到人民手中。",quote:"江城新生",color:"gold",x:"1949"},
+  {id:80,name:"渡江战役",year:"1949",era:"解放战争时期",type:"军事战役",place:"江苏南京",province:"江苏",lng:118.8,lat:32.06,title:"渡江战役",desc:"1949年4月，百万雄师过大江，解放南京、上海。",quote:"钟山风雨起苍黄",color:"red",x:"1949"},
+  {id:81,name:"上海解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"上海解放",desc:"1949年5月，上海解放，东方明珠回到人民手中。",quote:"海上日出",color:"gold",x:"1949"},
+  {id:82,name:"青岛解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"山东青岛",province:"山东",lng:120.33,lat:36.06,title:"青岛解放",desc:"1949年6月，青岛解放，山东全境解放。",quote:"海滨城市新生",color:"gold",x:"1949"},
+  {id:83,name:"石家庄解放",year:"1947",era:"解放战争时期",type:"重大事件",place:"河北石家庄",province:"河北",lng:114.51,lat:38.04,title:"石家庄解放",desc:"1947年11月，石家庄解放，是解放战争中第一个解放的大城市。",quote:"城市攻坚战范例",color:"gold",x:"1947"},
+  {id:84,name:"北平和平解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"北平和平解放",desc:"1949年1月，北平和平解放，古城完好无损。",quote:"古都新生",color:"gold",x:"1949"},
+  {id:85,name:"济南战役",year:"1948",era:"解放战争时期",type:"军事战役",place:"山东济南",province:"山东",lng:117.12,lat:36.65,title:"济南战役",desc:"1948年9月，济南战役歼敌10万，揭开战略决战序幕。",quote:"打倒蒋介石，解放全中国",color:"red",x:"1948"},
+  {id:86,name:"孟良崮战役",year:"1947",era:"解放战争时期",type:"军事战役",place:"山东临沂",province:"山东",lng:118.35,lat:35.11,title:"孟良崮战役",desc:"1947年5月，孟良崮战役全歼国民党整编74师。",quote:"百万军中取上将首级",color:"red",x:"1947"},
+  {id:87,name:"黄河渡河战役",year:"1947",era:"解放战争时期",type:"军事战役",place:"山西运城",province:"山西",lng:110.59,lat:35.86,title:"千里跃进大别山",desc:"1947年6月，刘邓大军千里跃进大别山，揭开战略进攻序幕。",quote:"狭路相逢勇者胜",color:"red",x:"1947"},
+  {id:88,name:"淮海战役总前委",year:"1948",era:"解放战争时期",type:"指挥机构",place:"山东济宁",province:"山东",lng:116.33,lat:35.51,title:"淮海战役总前委",desc:"淮海战役总前委统一指挥中原野战军和华东野战军。",quote:"统一指挥，协同作战",color:"purple",x:"1948"},
+  {id:89,name:"邵阳战役",year:"1949",era:"解放战争时期",type:"军事战役",place:"湖南邵阳",province:"湖南",lng:111.47,lat:27.3,title:"衡宝战役",desc:"1949年9月至10月，衡宝战役歼灭白崇禧主力。",quote:"追歼残敌",color:"red",x:"1949"},
+  {id:90,name:"兰州解放",year:"1949",era:"解放战争时期",type:"重大事件",place:"甘肃兰州",province:"甘肃",lng:103.83,lat:36.07,title:"兰州解放",desc:"1949年8月26日，兰州解放，西北门户打开。",quote:"金城解放",color:"gold",x:"1949"},
+  {id:91,name:"延安革命圣地",year:"1935",era:"新民主主义革命时期",type:"革命圣地",place:"陕西延安",province:"陕西",lng:108.95,lat:34.27,title:"延安革命圣地",desc:"1935年至1948年，延安是中共中央所在地，中国革命的心脏。",quote:"东方红，太阳升",color:"gold",x:"1935"},
+  {id:92,name:"刘胡兰就义",year:"1947",era:"解放战争时期",type:"英雄人物",place:"山西文水",province:"山西",lng:111.53,lat:36.6,title:"刘胡兰就义",desc:"1947年1月，刘胡兰英勇就义，年仅15岁。毛泽东题词：生的伟大，死的光荣。",quote:"生的伟大，死的光荣",color:"purple",x:"1947"},
+  {id:93,name:"人民英雄纪念碑奠基",year:"1949",era:"新中国成立",type:"重大事件",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"人民英雄纪念碑奠基",desc:"1949年9月30日，人民英雄纪念碑奠基，纪念革命先烈。",quote:"人民英雄永垂不朽",color:"gold",x:"1949"},
+  {id:94,name:"中共一大纪念馆",year:"1921",era:"新民主主义革命时期",type:"纪念设施",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"中共一大纪念馆",desc:"位于上海兴业路76号，纪念中国共产党诞生地。",quote:"开天辟地，敢为人先",color:"purple",x:"1921"},
+  {id:95,name:"人民大会堂建成",year:"1959",era:"社会主义革命和建设时期",type:"建设成就",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"人民大会堂建成",desc:"1959年9月，人民大会堂建成，是新中国十大建筑之一。",quote:"人民当家作主",color:"blue",x:"1959"},
+  {id:96,name:"毛主席纪念堂建成",year:"1977",era:"社会主义革命和建设时期",type:"纪念设施",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"毛主席纪念堂建成",desc:"1977年9月，毛主席纪念堂建成，供人民瞻仰。",quote:"永远怀念毛主席",color:"purple",x:"1977"},
+  {id:97,name:"中共二大会址",year:"1922",era:"新民主主义革命时期",type:"重要会议",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"中共二大召开",desc:"1922年7月，中共二大在上海召开，制定党的最高纲领和最低纲领。",quote:"反帝反封建",color:"purple",x:"1922"},
+  {id:98,name:"西安事变旧址",year:"1936",era:"抗日战争时期",type:"革命遗址",place:"陕西西安",province:"陕西",lng:108.95,lat:34.27,title:"西安事变旧址",desc:"张学良公馆和杨虎城公馆，见证西安事变历史。",quote:"历史转折点",color:"purple",x:"1936"},
+  {id:99,name:"武昌首义",year:"1911",era:"旧民主主义革命时期",type:"重大事件",place:"湖北武汉",province:"湖北",lng:114.32,lat:30.51,title:"武昌首义",desc:"1911年10月10日，武昌起义爆发，辛亥革命推翻封建帝制。",quote:"首义精神",color:"gold",x:"1911"},
+  {id:100,name:"天安门广场",year:"1949",era:"新中国成立",type:"革命圣地",place:"北京",province:"北京",lng:116.41,lat:39.9,title:"天安门广场",desc:"中华人民共和国成立的地方，中国人心中的圣地。",quote:"我爱北京天安门",color:"gold",x:"1949"},
+  {id:101,name:"西藏和平解放纪念碑",year:"1951",era:"社会主义革命和建设时期",type:"重大事件",place:"西藏·拉萨",province:"西藏",lng:91.1,lat:29.65,title:"西藏和平解放",desc:"1951年5月23日，中央政府与西藏地方政府签署关于和平解放西藏办法的协议，西藏回到祖国怀抱。",quote:"祖国统一是西藏人民的根本所系。",color:"red",x:"1951"},
+  {id:102,name:"成渝铁路终点站",year:"1952",era:"社会主义革命和建设时期",type:"建设成就",place:"四川·成都",province:"四川",lng:104.06,lat:30.67,title:"成渝铁路建成通车",desc:"1952年7月1日，新中国第一条自主建设的铁路成渝铁路全线建成通车，结束了蜀道难的历史。",quote:"蜀道难的历史从此终结。",color:"green",x:"1952"},
+  {id:103,name:"中南海",year:"1953",era:"社会主义革命和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"第一个五年计划启动",desc:"1953年，中国开始实施第一个五年计划，集中力量优先发展重工业，开启大规模工业化建设。",quote:"要建设强大的社会主义工业化国家。",color:"gold",x:"1953"},
+  {id:104,name:"人民大会堂",year:"1954",era:"社会主义革命和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"第一届全国人民代表大会",desc:"1954年9月，第一届全国人民代表大会第一次会议在北京召开，通过新中国第一部宪法。",quote:"我们的国家是工人阶级领导的、以工农联盟为基础的人民民主国家。",color:"red",x:"1954"},
+  {id:105,name:"中共八大会址",year:"1956",era:"社会主义革命和建设时期",type:"重大事件",place:"北京",province:"北京",lng:120.66,lat:31.23,title:"中共八大",desc:"1956年9月，中共八大召开，正确分析了中国社会的主要矛盾，提出发展生产力是根本任务。",quote:"大规模的急风暴雨式的阶级斗争已经基本结束。",color:"gold",x:"1956"},
+  {id:106,name:"武汉长江大桥",year:"1957",era:"社会主义革命和建设时期",type:"建设成就",place:"湖北·武汉",province:"湖北",lng:114.3,lat:30.57,title:"武汉长江大桥通车",desc:"1957年10月15日，万里长江第一桥正式通车，京广铁路全线贯通，天堑变通途。",quote:"一桥飞架南北，天堑变通途。",color:"green",x:"1957"},
+  {id:107,name:"哈尔滨工业大学",year:"1958",era:"社会主义革命和建设时期",type:"重大事件",place:"黑龙江·哈尔滨",province:"黑龙江",lng:126.53,lat:45.75,title:"大炼钢铁运动",desc:"1958年，全国掀起大炼钢铁运动，各地建设大量小高炉土高炉，为后来的经济困难埋下伏笔。",quote:"超英赶美，钢产量翻番。",color:"red",x:"1958"},
+  {id:108,name:"十三陵水库",year:"1958",era:"社会主义革命和建设时期",type:"建设成就",place:"北京·昌平",province:"北京",lng:116.2,lat:40.23,title:"人民公社化运动",desc:"1958年，人民公社化运动迅速铺开，一大二公体制对农村经济造成冲击。",quote:"人民公社好。",color:"red",x:"1958"},
+  {id:109,name:"中南海",year:"1960",era:"社会主义革命和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"三年困难时期",desc:"1959至1961年，连续三年自然灾害加上政策失误，国民经济陷入严重困难时期。",quote:"自己动手，丰衣足食。",color:"red",x:"1960"},
+  {id:110,name:"罗布泊",year:"1964",era:"建设",type:"重大事件",place:"新疆·罗布泊",province:"新疆",lng:90.92,lat:41.42,title:"第一颗原子弹爆炸",desc:"1964年10月16日，中国第一颗原子弹在罗布泊试验成功，打破了超级大国的核垄断地位。",quote:"东方巨响，震惊世界。",color:"red",x:"1964"},
+  {id:111,name:"大庆油田",year:"1959",era:"社会主义革命和建设时期",type:"建设成就",place:"黑龙江·大庆",province:"黑龙江",lng:125.03,lat:46.59,title:"大庆油田开发",desc:"1959年9月，松辽盆地松基三井喷出工业油流，大庆油田被发现并迅速开发，摘掉贫油国帽子。",quote:"把石油工业搞上去。",color:"green",x:"1959"},
+  {id:112,name:"东方红卫星发射场",year:"1970",era:"社会主义革命和建设时期",type:"重大事件",place:"甘肃·酒泉",province:"甘肃",lng:116.56,lat:40.26,title:"东方红一号卫星发射",desc:"1970年4月24日，中国第一颗人造地球卫星东方红一号成功发射，《东方红》响彻太空。",quote:"上得去，抓得住，听得到，看得见。",color:"red",x:"1970"},
+  {id:113,name:"南京长江大桥",year:"1968",era:"社会主义革命和建设时期",type:"建设成就",place:"江苏·南京",province:"江苏",lng:120.66,lat:31.23,title:"南京长江大桥通车",desc:"1968年12月29日，南京长江大桥全面建成通车，是长江上第一座自主设计建造的公铁两用桥。",quote:"独立自主，自力更生。",color:"green",x:"1968"},
+  {id:114,name:"青藏公路",year:"1954",era:"社会主义革命和建设时期",type:"建设成就",place:"青海·格尔木",province:"青海",lng:101.77,lat:36.6,title:"青藏公路通车",desc:"1954年12月25日，青藏公路全线通车，结束了西藏无公路的历史。",quote:"让世界屋脊与祖国内地紧密相连。",color:"green",x:"1954"},
+  {id:115,name:"三线建设指挥部",year:"1971",era:"社会主义革命和建设时期",type:"建设成就",place:"云南·昆明",province:"云南",lng:102.71,lat:25.04,title:"三线建设",desc:"六十年代中期开始，国家在西南地区实施三线建设，大批工业项目西迁，增强国防实力。",quote:"深挖洞，广积粮，不称霸。",color:"green",x:"1971"},
+  {id:116,name:"四川大学",year:"1977",era:"社会主义革命和建设时期",type:"重大事件",place:"四川·成都",province:"四川",lng:104.06,lat:30.67,title:"恢复高考",desc:"1977年冬，中断了十年的高考制度恢复，570万考生走进考场，改变了无数人的命运。",quote:"尊重知识，尊重人才。",color:"gold",x:"1977"},
+  {id:117,name:"人民大会堂",year:"1978",era:"社会主义革命和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"十一届三中全会",desc:"1978年12月18日至22日，十一届三中全会召开，开启了改革开放和现代化建设新时期。",quote:"实践是检验真理的唯一标准。",color:"red",x:"1978"},
+  {id:118,name:"宝钢总厂",year:"1978",era:"社会主义革命和建设时期",type:"建设成就",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"宝钢建设",desc:"1978年12月，宝钢一期工程动工建设，标志着中国钢铁工业现代化迈出重要步伐。",quote:"引进、消化、吸收、创新。",color:"green",x:"1978"},
+  {id:119,name:"深圳罗湖",year:"1980",era:"建设",type:"重大事件",place:"广东·深圳",province:"广东",lng:114.1,lat:22.2,title:"深圳经济特区成立",desc:"1980年8月，深圳、珠海、汕头、厦门四个经济特区成立，深圳成为改革开放的窗口。",quote:"时间就是金钱，效率就是生命。",color:"gold",x:"1980"},
+  {id:120,name:"深圳东门老街",year:"1984",era:"建设",type:"重大事件",place:"广东·深圳",province:"广东",lng:114.1,lat:22.2,title:"沿海城市开放",desc:"1984年，大连、秦皇岛、天津、烟台、青岛等14个沿海城市进一步对外开放。",quote:"特区是个窗口，是技术的窗口，知识的窗口，也是政策的窗口。",color:"gold",x:"1984"},
+  {id:121,name:"龙羊峡水电站",year:"1987",era:"建设",type:"建设成就",place:"青海·共和",province:"青海",lng:101.77,lat:36.6,title:"龙羊峡水电站发电",desc:"1987年9月，黄河上游最大的水电站龙羊峡水电站开始发电，为西北地区提供清洁能源。",quote:"开发黄河，造福人民。",color:"green",x:"1987"},
+  {id:122,name:"苏州工业园",year:"1994",era:"建设",type:"重大事件",place:"江苏·苏州",province:"江苏",lng:120.66,lat:31.23,title:"苏州工业园区",desc:"1994年，中国和新加坡两国政府合作建设的苏州工业园区正式启动，成为中外合作典范。",quote:"借鉴创新，合作共赢。",color:"green",x:"1994"},
+  {id:123,name:"香港会展中心",year:"1997",era:"建设",type:"重大事件",place:"香港",province:"香港",lng:114.1,lat:22.2,title:"香港回归祖国",desc:"1997年7月1日零点，中华人民共和国国旗和香港特别行政区区旗在香港升起，洗雪百年国耻。",quote:"香港回归祖国，标志着中国人民洗雪了香港被侵占的百年耻辱。",color:"red",x:"1997"},
+  {id:124,name:"澳门大三巴",year:"1999",era:"建设",type:"重大事件",place:"澳门",province:"澳门",lng:113.55,lat:22.2,title:"澳门回归祖国",desc:"1999年12月20日，澳门回归祖国，解放军进驻澳门，《七子之歌》再次唱响。",quote:"你可知Macau不是我真姓，我离开你太久了，母亲。",color:"red",x:"1999"},
+  {id:125,name:"上海浦东",year:"1990",era:"建设",type:"重大事件",place:"上海",province:"上海",lng:120.66,lat:31.23,title:"浦东开发开放",desc:"1990年4月18日，党中央宣布开发开放上海浦东，浦东从阡陌农田崛起为现代化金融中心。",quote:"抓紧浦东开发，不要动摇，一直到建成。",color:"gold",x:"1990"},
+  {id:126,name:"人民大会堂",year:"2001",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"中国加入WTO",desc:"2001年12月11日，中国正式成为世界贸易组织成员，标志着改革开放进入新阶段。",quote:"中国需要世界，世界需要中国。",color:"gold",x:"2001"},
+  {id:127,name:"上海世博会",year:"2010",era:"建设",type:"重大事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"上海世博会",desc:"2010年5月1日至10月31日，上海世界博览会在上海成功举办，吸引了246个国家和国际组织参展。",quote:"城市，让生活更美好。",color:"gold",x:"2010"},
+  {id:128,name:"呼和浩特",year:"1947",era:"社会主义革命和建设时期",type:"重大事件",place:"内蒙古·呼和浩特",province:"内蒙古",lng:111.67,lat:40.0,title:"内蒙古自治区成立",desc:"1947年5月1日，内蒙古自治区成立，是新中国成立的第一个省级民族自治区。",quote:"我们是草原的主人。",color:"red",x:"1947"},
+  {id:129,name:"六盘水煤矿",year:"1966",era:"社会主义革命和建设时期",type:"建设成就",place:"贵州·六盘水",province:"贵州",lng:106.71,lat:26.57,title:"六盘水煤炭基地",desc:"六十年代中期，六盘水煤炭基地建成，成为西南地区重要的能源基地。",quote:"开发矿业，支援建设。",color:"green",x:"1966"},
+  {id:130,name:"内蒙古工业基地",year:"1958",era:"社会主义革命和建设时期",type:"建设成就",place:"内蒙古·呼和浩特",province:"内蒙古",lng:111.65,lat:40.75,title:"内蒙古工业建设",desc:"五十年代末期，内蒙古一批工业项目相继建成，推动了地区经济发展。",quote:"建设美好家园。",color:"green",x:"1958"},
+  {id:131,name:"海口",year:"1988",era:"建设",type:"重大事件",place:"海南·海口",province:"海南",lng:110.2,lat:20.02,title:"海南建省办经济特区",desc:"1988年4月13日，海南省成立成为中国最大经济特区，开启了跨越式发展。",quote:"把海南建成真正的经济特区。",color:"gold",x:"1988"},
+  {id:132,name:"长春一汽",year:"1956",era:"社会主义革命和建设时期",type:"建设成就",place:"吉林·长春",province:"吉林",lng:125.32,lat:43.88,title:"第一汽车制造厂建成",desc:"1956年7月13日，第一辆解放牌卡车在中国第一汽车制造厂下线，结束了中国不能制造汽车的历史。",quote:"从无到有，从弱到强。",color:"green",x:"1956"},
+  {id:133,name:"银川",year:"1958",era:"社会主义革命和建设时期",type:"建设成就",place:"宁夏·银川",province:"宁夏",lng:106.27,lat:38.48,title:"宁夏回族自治区成立",desc:"1958年10月25日，宁夏回族自治区成立，开启了民族区域自治的新篇章。",quote:"各民族团结一心，建设美好宁夏。",color:"red",x:"1958"},
+  {id:134,name:"五指山",year:"1988",era:"建设",type:"重大事件",place:"海南·通什",province:"海南",lng:109.73,lat:19.18,title:"海南建省",desc:"1988年海南建省后，热带高效农业和旅游业快速发展，成为中国最大经济特区。",quote:"开放改革，发展图强。",color:"gold",x:"1988"},
+  {id:135,name:"内蒙古博物馆",year:"1964",era:"社会主义革命和建设时期",type:"建设成就",place:"内蒙古·呼和浩特",province:"内蒙古",lng:111.65,lat:40.75,title:"草原英雄小姐妹",desc:"1964年2月，龙梅和玉荣在暴风雪中保护羊群，被誉为草原英雄小姐妹。",quote:"保护集体的羊群是我们的责任。",color:"red",x:"1964"},
+  {id:136,name:"莫干山",year:"1984",era:"建设",type:"重大事件",place:"浙江·湖州",province:"浙江",lng:120.15,lat:30.28,title:"莫干山会议",desc:"1984年9月，中青年经济工作者莫干山会议召开，探讨经济体制改革方向，影响了八十年代的改革决策。",quote:"尊重实践，勇于创新。",color:"gold",x:"1984"},
+  {id:137,name:"厦门鼓浪屿",year:"1980",era:"建设",type:"重大事件",place:"福建·厦门",province:"福建",lng:118.1,lat:24.48,title:"厦门经济特区",desc:"1980年，厦门经济特区成立，成为对外开放的重要窗口和海峡两岸交流的桥梁。",quote:"把厦门建成社会主义现代化国际港口城市。",color:"gold",x:"1980"},
+  {id:138,name:"中南海",year:"1992",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"南方谈话",desc:"1992年1月至2月，改革开放和现代化建设进入新阶段，中国走上建设中国特色社会主义的道路。",quote:"发展是硬道理。",color:"red",x:"1992"},
+  {id:139,name:"武汉东湖",year:"1981",era:"建设",type:"重大事件",place:"湖北·武汉",province:"湖北",lng:114.3,lat:30.57,title:"武汉激光照排",desc:"1981年，王选主持的华文激光照排系统研制成功，引发印刷技术革命。",quote:"用科技改变出版业。",color:"green",x:"1981"},
+  {id:140,name:"乌鲁木齐",year:"1990",era:"建设",type:"重大事件",place:"新疆·乌鲁木齐",province:"新疆",lng:87.62,lat:43.83,title:"亚欧大陆桥",desc:"1990年9月12日，第二条亚欧大陆桥全线贯通，中国向西开放有了铁路大通道。",quote:"连接东西，沟通亚欧。",color:"green",x:"1990"},
+  {id:141,name:"昆明",year:"1999",era:"建设",type:"重大事件",place:"云南·昆明",province:"云南",lng:102.71,lat:25.04,title:"昆明世博会",desc:"1999年5月1日至10月31日，中国首次举办世界园艺博览会，昆明向世界展示了中国园艺文化。",quote:"人与自然——迈向二十一世纪。",color:"gold",x:"1999"},
+  {id:142,name:"人民大会堂",year:"2008",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"北京奥运会",desc:"2008年8月8日至24日，北京第29届夏季奥林匹克运动会成功举办，中国体育代表团金牌数第一。",quote:"同一个世界，同一个梦想。",color:"gold",x:"2008"},
+  {id:143,name:"杭州西湖",year:"2016",era:"建设",type:"重大事件",place:"浙江·杭州",province:"浙江",lng:120.15,lat:30.27,title:"G20杭州峰会",desc:"2016年9月4日至5日，G20峰会在杭州成功举办，向世界展示了中国的开放与自信。",quote:"构建创新、活力、联动、包容的世界经济。",color:"gold",x:"2016"},
+  {id:144,name:"郑州",year:"2013",era:"建设",type:"重大事件",place:"河南·郑州",province:"河南",lng:113.65,lat:34.75,title:"郑州航空港经济实验区",desc:"2013年3月，郑州航空港经济综合实验区获批，成为中国第一个国家级航空经济发展先行区。",quote:"买全球，卖全球。",color:"green",x:"2013"},
+  {id:145,name:"长沙",year:"2015",era:"建设",type:"重大事件",place:"湖南·长沙",province:"湖南",lng:112.98,lat:28.2,title:"湘江新区",desc:"2015年4月，湖南湘江新区获批成立，成为中部地区首个国家级新区。",quote:"创新发展，开放崛起。",color:"green",x:"2015"},
+  {id:146,name:"哈尔滨",year:"2015",era:"建设",type:"重大事件",place:"黑龙江·哈尔滨",province:"黑龙江",lng:126.53,lat:45.75,title:"哈尔滨新区",desc:"2015年12月，哈尔滨新区获批，成为中国唯一以对俄合作为主题的国家级新区。",quote:"打通向北开放的重要窗口。",color:"green",x:"2015"},
+  {id:147,name:"成都",year:"2015",era:"建设",type:"重大事件",place:"四川·成都",province:"四川",lng:104.06,lat:30.67,title:"天府新区",desc:"2014年10月，四川天府新区获批，成为西部重要的新兴增长极。",quote:"打造西部经济核心增长极。",color:"green",x:"2015"},
+  {id:148,name:"南宁",year:"2015",era:"建设",type:"重大事件",place:"广西·南宁",province:"广西",lng:108.33,lat:22.8,title:"中国-东盟博览会",desc:"自2004年起，中国-东盟博览会每年在南宁举办，成为中国与东盟交流合作的重要平台。",quote:"共建21世纪海上丝绸之路。",color:"gold",x:"2015"},
+  {id:149,name:"拉萨",year:"2021",era:"建设",type:"重大事件",place:"西藏·拉萨",province:"西藏",lng:91.1,lat:29.65,title:"川藏铁路拉林段",desc:"2021年6月25日，川藏铁路拉萨至林芝段开通运营，雪域高原接入现代化铁路网。",quote:"让西藏人民共享发展成果。",color:"green",x:"2021"},
+  {id:150,name:"北京城市副中心",year:"2019",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"北京城市副中心",desc:"2019年1月，北京市级行政中心正式迁入城市副中心，北京进入一核两翼发展新阶段。",quote:"建设国际一流的和谐宜居之都。",color:"gold",x:"2019"},
+  {id:151,name:"乌镇",year:"2014",era:"建设",type:"重大事件",place:"浙江·桐乡",province:"浙江",lng:120.15,lat:30.28,title:"世界互联网大会",desc:"2014年11月19日，首届世界互联网大会在浙江乌镇举办，乌镇成为中国对话世界的互联网窗口。",quote:"互联互通，共享共治。",color:"gold",x:"2014"},
+  {id:152,name:"西安",year:"2013",era:"建设",type:"重大事件",place:"陕西·西安",province:"陕西",lng:108.95,lat:34.27,title:"丝绸之路经济带",desc:"2013年9月，中国提出共建丝绸之路经济带战略构想，西安成为重要节点城市。",quote:"加强政策沟通、道路联通、贸易畅通、货币流通、民心相通。",color:"gold",x:"2013"},
+  {id:153,name:"广州",year:"2018",era:"建设",type:"重大事件",place:"广东·广州",province:"广东",lng:113.27,lat:23.13,title:"港珠澳大桥开通",desc:"2018年10月23日，港珠澳大桥正式开通，全长55公里，是世界最长的跨海大桥。",quote:"超级工程，连接三地。",color:"gold",x:"2018"},
+  {id:154,name:"呼和浩特",year:"2017",era:"建设",type:"重大事件",place:"内蒙古·呼和浩特",province:"内蒙古",lng:111.67,lat:40.0,title:"内蒙古大数据中心",desc:"2017年以来，呼和浩特大数据中心建成，华为、阿里巴巴等企业数据中心入驻。",quote:"草原云谷，数据先行。",color:"green",x:"2017"},
+  {id:155,name:"银川",year:"2018",era:"建设",type:"重大事件",place:"宁夏·银川",province:"宁夏",lng:106.27,lat:38.48,title:"银川智慧城市建设",desc:"2018年，银川获批成为国家新型智慧城市试点，西部城市数字化转型加速。",quote:"智慧城市，美好生活。",color:"green",x:"2018"},
+  {id:156,name:"长春",year:"2017",era:"建设",type:"重大事件",place:"吉林·长春",province:"吉林",lng:125.32,lat:43.88,title:"长客股份高铁",desc:"2017年，中国标准动车组复兴号正式运营，其中长客股份是关键制造商。",quote:"中国速度，领跑世界。",color:"green",x:"2017"},
+  {id:157,name:"林芝",year:"2021",era:"建设",type:"重大事件",place:"西藏·林芝",province:"西藏",lng:91.77,lat:29.58,title:"川藏铁路林芝段",desc:"2021年，川藏铁路林芝段建设稳步推进，为西藏发展注入新动能。",quote:"天路通世界。",color:"green",x:"2021"},
+  {id:158,name:"昆明",year:"2016",era:"建设",type:"重大事件",place:"云南·昆明",province:"云南",lng:102.71,lat:25.04,title:"昆明南站",desc:"2016年12月28日，沪昆高铁全线开通，昆明接入全国高速铁路网。",quote:"彩云之南，高铁时代。",color:"green",x:"2016"},
+  {id:159,name:"乌鲁木齐",year:"2014",era:"建设",type:"重大事件",place:"新疆·乌鲁木齐",province:"新疆",lng:87.62,lat:43.83,title:"乌鲁木齐高铁站",desc:"2014年，新疆首个高铁站乌鲁木齐站投入使用，新疆进入高铁时代。",quote:"丝路新城，亚心之都。",color:"green",x:"2014"},
+  {id:160,name:"珠海",year:"2018",era:"建设",type:"重大事件",place:"广东·珠海",province:"广东",lng:113.12,lat:23.02,title:"珠海航展",desc:"2018年11月，第十二届中国国际航空航天博览会在珠海举办，展示中国航空航天最新成就。",quote:"逐梦蓝天，强军报国。",color:"gold",x:"2018"},
+  {id:161,name:"合肥",year:"2017",era:"建设",type:"重大事件",place:"安徽·合肥",province:"安徽",lng:117.27,lat:31.85,title:"合肥综合性国家科学中心",desc:"2017年1月，合肥获批建设综合性国家科学中心，量子信息科学等前沿研究领先。",quote:"创新驱动，科技强国。",color:"green",x:"2017"},
+  {id:162,name:"厦门",year:"2017",era:"建设",type:"重大事件",place:"福建·厦门",province:"福建",lng:118.1,lat:24.48,title:"金砖国家领导人会晤",desc:"2017年9月，金砖国家领导人第九次会晤在厦门举行，开启第二个金色十年。",quote:"深化金砖伙伴关系，开辟更加光明未来。",color:"gold",x:"2017"},
+  {id:163,name:"长沙",year:"2017",era:"建设",type:"重大事件",place:"湖南·长沙",province:"湖南",lng:112.98,lat:28.2,title:"湘江论坛",desc:"2017年，湘江论坛在长沙举办，聚焦创新驱动和中部崛起战略。",quote:"创新发展，开放合作。",color:"gold",x:"2017"},
+  {id:164,name:"哈尔滨",year:"2018",era:"建设",type:"重大事件",place:"黑龙江·哈尔滨",province:"黑龙江",lng:126.53,lat:45.75,title:"哈长城市群",desc:"2018年，哈长城市群发展规划获批，东北振兴有了重要支撑。",quote:"协调振兴，绿色发展。",color:"green",x:"2018"},
+  {id:165,name:"贵阳",year:"2018",era:"建设",type:"重大事件",place:"贵州·贵阳",province:"贵州",lng:106.71,lat:26.57,title:"数博会",desc:"2018年5月，中国国际大数据产业博览会在贵阳举办，贵阳成为大数据产业高地。",quote:"数化万物，智在融合。",color:"green",x:"2018"},
+  {id:166,name:"成都",year:"2021",era:"建设",type:"重大事件",place:"四川·成都",province:"四川",lng:104.06,lat:30.67,title:"世界大学生运动会",desc:"2021年，第31届世界大学生夏季运动会在成都举办，展现天府之国的魅力。",quote:"成都成就梦想。",color:"gold",x:"2021"},
+  {id:167,name:"天安门广场",year:"2015",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"抗战胜利70周年阅兵",desc:"2015年9月3日，纪念中国人民抗日战争暨世界反法西斯战争胜利70周年大会在天安门广场举行。",quote:"正义必胜，和平必胜，人民必胜。",color:"red",x:"2015"},
+  {id:168,name:"天安门广场",year:"2019",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"新中国成立70周年",desc:"2019年10月1日，庆祝中华人民共和国成立70周年大会在天安门广场举行。",quote:"伟大的中华人民共和国万岁。",color:"red",x:"2019"},
+  {id:169,name:"天安门广场",year:"2021",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"建党百年",desc:"2021年7月1日，庆祝中国共产党成立100周年大会在天安门广场隆重举行。",quote:"伟大、光荣、正确的中国共产党万岁。",color:"red",x:"2021"},
+  {id:170,name:"北京",year:"2022",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"北京冬奥会冬残奥会",desc:"2022年2月和3月，北京冬奥会和冬残奥会成功举办，贯彻绿色、共享、开放、廉洁的办奥理念。",quote:"一起向未来。",color:"gold",x:"2022"},
+  {id:171,name:"呼和浩特",year:"2019",era:"建设",type:"重大事件",place:"内蒙古·呼和浩特",province:"内蒙古",lng:111.65,lat:40.75,title:"内蒙古草原那达慕",desc:"2019年，那达慕大会在乌兰察布举办，展现草原文化魅力和民族团结。",quote:"骏马奔腾，草原欢歌。",color:"red",x:"2019"},
+  {id:172,name:"长春",year:"2019",era:"建设",type:"重大事件",place:"吉林·长春",province:"吉林",lng:125.32,lat:43.88,title:"长春电影节",desc:"2019年，第十五届长春电影节举办，展示中国电影发展成就。",quote:"光影筑梦，礼赞时代。",color:"gold",x:"2019"},
+  {id:173,name:"银川",year:"2019",era:"建设",type:"重大事件",place:"宁夏·银川",province:"宁夏",lng:106.27,lat:38.48,title:"银川黄河大桥",desc:"2019年，银川黄河大桥建成通车，宁夏沿黄经济区互联互通水平提升。",quote:"黄河明珠，丝路新城。",color:"green",x:"2019"},
+  {id:174,name:"香港",year:"2019",era:"建设",type:"重大事件",place:"香港",province:"香港",lng:114.1,lat:22.2,title:"粤港澳大湾区",desc:"2019年2月，《粤港澳大湾区发展规划纲要》发布，香港、澳门与珠三角九城共绘发展蓝图。",quote:"共建一流湾区，共创美好未来。",color:"gold",x:"2019"},
+  {id:175,name:"中南海",year:"2013",era:"建设",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.9,title:"一带一路倡议",desc:"2013年秋，中国提出共建丝绸之路经济带和21世纪海上丝绸之路重大倡议。",quote:"共商共建共享。",color:"gold",x:"2013"},
+  {id:176,name:"海口",year:"2020",era:"建设",type:"重大事件",place:"海南·海口",province:"海南",lng:110.2,lat:20.02,title:"海南自由贸易港",desc:"2020年6月1日，《海南自由贸易港建设总体方案》发布，海南成为中国对外开放新高地。",quote:"把海南自由贸易港建设成为引领新时代中国对外开放的鲜明旗帜。",color:"gold",x:"2020"},
+  {id:177,name:"上海",year:"2019",era:"建设",type:"重大事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"上海自贸区临港新片区",desc:"2019年8月，中国首个自由贸易试验区临港新片区在上海设立，对标国际一流。",quote:"大胆试，大胆闯，自主改。",color:"gold",x:"2019"},
+  {id:178,name:"南昌",year:"2016",era:"建设",type:"重大事件",place:"江西·南昌",province:"江西",lng:115.86,lat:28.68,title:"南昌VR产业基地",desc:"2016年，南昌打造VR产业基地，成为中国虚拟现实产业发展的前沿城市。",quote:"VR让世界更精彩。",color:"green",x:"2016"},
+  {id:179,name:"郑州",year:"2016",era:"建设",type:"重大事件",place:"河南·郑州",province:"河南",lng:114.49,lat:35.87,title:"跨境电商综试区",desc:"2016年，郑州跨境电商综合试验区获批，中部地区外贸新业态蓬勃发展。",quote:"买全球，卖全球。",color:"green",x:"2016"},
+  {id:180,name:"广州",year:"2016",era:"建设",type:"重大事件",place:"广东·广州",province:"广东",lng:113.27,lat:23.13,title:"广州港深水航道",desc:"2016年，广州港深水航道拓宽工程完工，超级货轮可直达广州港。",quote:"千年商都，向海而兴。",color:"green",x:"2016"},
+  {id:181,name:"中国共产党第一次全国代表大会",year:"1921",era:"建党时期",type:"重大事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"中国共产党的诞生",desc:"1921年7月23日，中国共产党第一次全国代表大会在上海召开，宣告了中国共产党的正式成立。",quote:"自从有了中国共产党，中国革命的面目就焕然一新了。",color:"gold",x:"1921"},
+  {id:182,name:"中国共产党第二次全国代表大会",year:"1922",era:"建党时期",type:"重大事件",place:"上海",province:"上海",lng:121.47,lat:31.23,title:"制定民主革命纲领",desc:"1922年7月16日，中共二大在上海召开，第一次提出了反帝反封建的民主革命纲领。",quote:"消除内乱，打倒军阀，建设国内和平。",color:"gold",x:"1922"},
+  {id:183,name:"西藏和平解放协议",year:"1951",era:"社会主义改造和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"西藏和平解放",desc:"1951年5月23日，中央人民政府和西藏地方政府签署和平解放西藏办法的协议，西藏实现和平解放。",quote:"西藏人民从此永远脱离帝国主义的侵略和羁绊。",color:"red",x:"1951"},
+  {id:184,name:"成渝铁路建成通车",year:"1952",era:"社会主义改造和建设时期",type:"重大工程",place:"成都",province:"四川",lng:104.06,lat:30.67,title:"新中国第一条铁路",desc:"1952年7月1日，成渝铁路全线通车，这是新中国成立后建成的第一条铁路，全长505公里。",quote:"西南人民近四十年的愿望终于实现了。",color:"red",x:"1952"},
+  {id:185,name:"第一届全国人民代表大会第一次会议",year:"1954",era:"社会主义改造和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"中华人民共和国宪法诞生",desc:"1954年9月15日，一届全国人大一次会议在北京召开，通过了《中华人民共和国宪法》，确立了人民代表大会制度。",quote:"我们的国家政权属于人民。",color:"red",x:"1954"},
+  {id:186,name:"荆江分洪工程",year:"1952",era:"社会主义改造和建设时期",type:"重大工程",place:"湖北荆州",province:"湖北",lng:112.24,lat:30.33,title:"新中国第一项大型水利工程",desc:"1952年，为解决长江水患，30万军民仅用75天建成荆江分洪工程，创造了世界水利史上的奇迹。",quote:"为了荆江两岸人民的生命财产安全。",color:"red",x:"1952"},
+  {id:187,name:"第一个五年计划制定",year:"1953",era:"社会主义改造和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"工业化建设开局",desc:"1953年开始实施第一个五年计划，集中主要力量进行以苏联帮助设计的156项工程为中心的工业建设。",quote:"要在一个相当长的历史时期内实现国家的社会主义工业化。",color:"red",x:"1953"},
+  {id:188,name:"手工业社会主义改造",year:"1953",era:"社会主义改造和建设时期",type:"重大事件",place:"全国",province:"北京",lng:116.4,lat:39.91,title:"个体手工业合作化",desc:"1953年起，国家对个体手工业进行社会主义改造，通过合作化道路将手工业者组织起来，到1956年基本完成。",quote:"手工业者只有联合起来，才能发挥更大的作用。",color:"red",x:"1953"},
+  {id:189,name:"周恩来率团出席万隆会议",year:"1955",era:"社会主义改造和建设时期",type:"重大事件",place:"印度尼西亚万隆",province:"北京",lng:116.4,lat:39.91,title:"求同存异的外交经典",desc:"1955年4月，周恩来率团出席亚非会议，提出求同存异原则，与众多亚非国家建立了友好关系。",quote:"中国代表团是来求团结而不是来吵架的。",color:"red",x:"1955"},
+  {id:190,name:"武汉长江大桥建成",year:"1957",era:"社会主义改造和建设时期",type:"重大工程",place:"湖北武汉",province:"湖北",lng:114.29,lat:30.58,title:"天堑变通途",desc:"1957年10月15日，武汉长江大桥正式通车，这是长江上的第一座公铁两用桥，毛泽东题词一桥飞架南北，天堑变通途。",quote:"一桥飞架南北，天堑变通途。",color:"red",x:"1957"},
+  {id:191,name:"中共八届三中全会",year:"1957",era:"社会主义改造和建设时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"确定跃进路线",desc:"1957年9月，中共八届三中全会召开，提出大跃进口号，开始了后来的大跃进运动。",quote:"在生产战线上要实现一个大的跃进。",color:"red",x:"1957"},
+  {id:192,name:"大炼钢铁运动",year:"1958",era:"社会主义改造和建设时期",type:"重大事件",place:"全国",province:"北京",lng:116.4,lat:39.91,title:"全民炼钢运动",desc:"1958年夏，全国掀起大炼钢铁运动，提出超英赶美目标，号召全民大办钢铁。",quote:"为实现1070万吨钢而奋斗。",color:"red",x:"1958"},
+  {id:193,name:"人民公社化运动",year:"1958",era:"社会主义改造和建设时期",type:"重大事件",place:"全国",province:"北京",lng:116.4,lat:39.91,title:"一大二公的人民公社",desc:"1958年，人民公社化运动迅速推进，提出一大二公特点，全国基本实现公社化。",quote:"人民公社好。",color:"red",x:"1958"},
+  {id:194,name:"第一台国产电视机诞生",year:"1958",era:"社会主义改造和建设时期",type:"重大成就",place:"天津",province:"天津",lng:117.2,lat:39.13,title:"新中国第一台黑白电视机",desc:"1958年，天津无线电厂研制成功新中国第一台黑白电视机，命名为北京牌，标志着我国家电工业的开端。",quote:"我们有了自己的电视机。",color:"red",x:"1958"},
+  {id:195,name:"刘少奇访问东南亚",year:"1956",era:"社会主义改造和建设时期",type:"重大事件",place:"印度尼西亚",province:"北京",lng:116.4,lat:39.91,title:"新中国元首首次出访",desc:"1956年9月至11月，国家主席刘少奇访问印度尼西亚、柬埔寨、越南等国，这是新中国元首首次正式出访。",quote:"发展与各国的友好关系，促进世界和平。",color:"red",x:"1956"},
+  {id:196,name:"中苏关系恶化",year:"1960",era:"曲折探索时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"苏联撤走全部专家",desc:"1960年7月，苏联突然撤回全部在华专家，撕毁合同，停止提供重要设备，加剧了中国的经济困难。",quote:"中国人民决心走自力更生的道路。",color:"red",x:"1960"},
+  {id:197,name:"对国民经济调整",year:"1960",era:"曲折探索时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"调整巩固充实提高",desc:"1960年冬，中央决定对国民经济实行调整、巩固、充实、提高的方针，纠正此前经济工作中的失误。",quote:"调整是为了更好地前进。",color:"red",x:"1960"},
+  {id:198,name:"中印边境自卫反击战",year:"1962",era:"曲折探索时期",type:"重大事件",place:"西藏",province:"西藏",lng:91.1,lat:29.65,title:"捍卫领土主权",desc:"1962年10月至11月，中国边防部队对入侵的印度军队进行自卫反击作战，夺回了被占领土，维护了国家尊严。",quote:"是可忍，孰不可忍。",color:"red",x:"1962"},
+  {id:199,name:"粉碎四人帮",year:"1976",era:"改革开放时期",type:"重大事件",place:"北京",province:"北京",lng:116.4,lat:39.91,title:"结束文革的标志性事件",desc:"1976年10月6日，在华国锋、叶剑英等决策下，四人帮被一举粉碎，结束了十年文革的动乱局面。",quote:"党和人民的胜利。",color:"red",x:"1976"},
+  {id:200,name:"唐山大地震救援",year:"1976",era:"改革开放时期",type:"重大事件",place:"河北唐山",province:"河北",lng:118.19,lat:39.62,title:"团结抗灾的伟大精神",desc:"1976年7月28日，唐山发生7.8级大地震，造成24万人死亡。在党中央领导下，全国人民全力支援唐山抗震救灾。",quote:"人定胜天。",color:"red",x:"1976"}
+];
+
+// ═══════════════════════════════════════════════
+// FIGURES DATA
+// ═══════════════════════════════════════════════
+const figuresData = [
+  {id:'f1',name:'毛泽东',years:'1893—1976',avatar:'🇨🇳',brief:'中国共产党、中国人民解放军、中华人民共和国的主要缔造者和领导人。',category:'建党',tags:['建党','军事','政治'],events:[{year:'1893',text:'生于湖南省湘潭县韶山冲'},{year:'1921',text:'出席中共一大，参与创建中国共产党'},{year:'1927',text:'领导秋收起义，引兵井冈山，创建第一个农村革命根据地'},{year:'1935',text:'遵义会议确立在党中央和红军的领导地位'},{year:'1949',text:'在天安门城楼庄严宣告中华人民共和国成立'},{year:'1976',text:'9月9日在北京逝世'}]},
+  {id:'f2',name:'周恩来',years:'1898—1976',avatar:'🤝',brief:'中华人民共和国首任总理，中国共产党和中华人民共和国主要领导人之一。',category:'外交',tags:['外交','政治'],events:[{year:'1898',text:'生于江苏省淮安市'},{year:'1921',text:'在法国巴黎参与组建中国共产主义青年团'},{year:'1927',text:'领导南昌起义，打响武装反抗第一枪'},{year:'1949',text:'出任中华人民共和国首任总理'},{year:'1955',text:'率团出席万隆会议，提出"求同存异"原则'},{year:'1976',text:'1月8日在北京逝世'}]},
+  {id:'f3',name:'朱德',years:'1886—1976',avatar:'⚔️',brief:'中华人民共和国十大元帅之首，中国人民解放军的主要创建者之一。',category:'将帅',tags:['军事','将帅'],events:[{year:'1886',text:'生于四川省仪陇县'},{year:'1922',text:'在德国柏林经张申府、周恩来介绍加入中国共产党'},{year:'1928',text:'率部与毛泽东在井冈山会师，合编为中国工农红军第四军'},{year:'1940',text:'指挥百团大战，歼敌2.5万余人'},{year:'1955',text:'被授予中华人民共和国元帅军衔'},{year:'1976',text:'7月6日在北京逝世'}]},
+  {id:'f4',name:'彭德怀',years:'1898—1974',avatar:'🛡️',brief:'中华人民共和国开国元帅，横刀立马的彭大将军。',category:'将帅',tags:['军事','将帅'],events:[{year:'1898',text:'生于湖南省湘潭县'},{year:'1935',text:'在遵义会议上坚决支持毛泽东的正确路线'},{year:'1940',text:'指挥八路军105个团发动百团大战'},{year:'1950',text:'出任中国人民志愿军司令员兼政治委员，赴朝作战'},{year:'1954',text:'任国防部长，主持军队现代化建设'},{year:'1974',text:'11月29日在北京逝世'}]},
+  {id:'f5',name:'刘少奇',years:'1898—1969',avatar:'📋',brief:'中国共产党和中华人民共和国主要领导人之一，曾任国家主席。',category:'建党',tags:['建党','政治'],events:[{year:'1898',text:'生于湖南省宁乡县'},{year:'1921',text:'在莫斯科东方大学学习期间转为中共党员'},{year:'1936',text:'主持北方局工作，推动抗日民族统一战线'},{year:'1945',text:'在中共七大上作修改党章的报告，提出毛泽东思想'},{year:'1959',text:'当选中华人民共和国主席'},{year:'1969',text:'11月12日在开封逝世'}]},
+  {id:'f6',name:'邓小平',years:'1904—1997',avatar:'🌊',brief:'中国共产党第二代领导核心，中国改革开放和现代化建设的总设计师。',category:'建设',tags:['建设','改革'],events:[{year:'1904',text:'生于四川省广安县'},{year:'1920',text:'赴法国勤工俭学'},{year:'1929',text:'领导百色起义，创建红七军和右江革命根据地'},{year:'1978',text:'在十一届三中全会上提出改革开放政策'},{year:'1980',text:'倡导设立深圳、珠海、汕头、厦门经济特区'},{year:'1992',text:'南方谈话，推动改革开放进入新阶段'}]},
+  {id:'f7',name:'陈独秀',years:'1879—1942',avatar:'📰',brief:'新文化运动的主要倡导者，中国共产党的主要创始人和早期领导人。',category:'建党',tags:['建党','思想'],events:[{year:'1879',text:'生于安徽省怀宁县'},{year:'1915',text:'创办《青年杂志》发起新文化运动'},{year:'1921',text:'在中共一大上被选为中央局书记'},{year:'1925',text:'领导五卅运动，掀起全国反帝怒潮'},{year:'1942',text:'5月27日在四川江津病逝'}]},
+  {id:'f8',name:'董必武',years:'1886—1975',avatar:'🏛️',brief:'中国共产党创始人之一，中华人民共和国代理主席。',category:'建党',tags:['建党','政治'],events:[{year:'1886',text:'生于湖北省红安县'},{year:'1921',text:'作为武汉代表出席中共一大'},{year:'1934',text:'参加长征，任中央政府西北办事处主席'},{year:'1949',text:'领导成立中华人民共和国中央人民政府'},{year:'1975',text:'4月2日在北京逝世'}]},
+  {id:'f9',name:'李大钊',years:'1889—1927',avatar:'🔥',brief:'中国共产主义运动的先驱，伟大的马克思主义者，中国共产党主要创始人之一。',category:'建党',tags:['建党','思想'],events:[{year:'1889',text:'生于河北省乐亭县'},{year:'1919',text:'发表《我的马克思主义观》，系统介绍马克思主义'},{year:'1920',text:'在北京成立共产主义小组，推动北方建党'},{year:'1924',text:'促成第一次国共合作'},{year:'1927',text:'4月6日被奉系军阀逮捕，4月28日英勇就义'}]},
+  {id:'f10',name:'贺龙',years:'1896—1969',avatar:'🗡️',brief:'中华人民共和国开国元帅，人民军队的创建者之一。',category:'将帅',tags:['军事','将帅'],events:[{year:'1896',text:'生于湖南省桑植县'},{year:'1927',text:'参加南昌起义，任起义军总指挥'},{year:'1935',text:'率红二、六军团与红四方面军会师'},{year:'1949',text:'指挥部队解放西南全境'},{year:'1955',text:'被授予中华人民共和国元帅军衔'},{year:'1969',text:'6月9日在北京逝世'}]},
+  {id:'f11',name:'叶剑英',years:'1897—1986',avatar:'⚡',brief:'中华人民共和国开国元帅，久经考验的共产主义忠诚战士。',category:'将帅',tags:['军事','将帅','外交'],events:[{year:'1897',text:'生于广东省梅县'},{year:'1927',text:'在南昌起义前传递关键情报，后参加起义'},{year:'1935',text:'在长征途中截获密电，为党和红军避免重大损失'},{year:'1976',text:'与叶剑英等同志决策粉碎"四人帮"'},{year:'1986',text:'10月22日在北京逝世'}]},
+  {id:'f12',name:'叶挺',years:'1896—1946',avatar:'🛡️',brief:'中国人民解放军创始人之一，铁军军长。',category:'将帅',tags:['军事','将帅'],events:[{year:'1896',text:'生于广东省惠阳县'},{year:'1925',text:'回国后参与组建叶挺独立团'},{year:'1927',text:'参加南昌起义和广州起义'},{year:'1941',text:'皖南事变中被扣押，在狱中写下《囚歌》'},{year:'1946',text:'4月8日从重庆返回延安途中因飞机失事遇难'}]},
+  {id:'f13',name:'刘胡兰',years:'1932—1947',avatar:'🌸',brief:'著名革命先烈，少年时代投身革命，被誉为"生的伟大，死的光荣"。',category:'建党',tags:['建党','英雄'],events:[{year:'1932',text:'生于山西省文水县云周西村'},{year:'1945',text:'参加中共妇女干部训练班，回村后担任妇救会秘书'},{year:'1947',text:'1月12日被国民党阎军逮捕，从容就义于铡刀之下，年仅15岁'}]},
+  {id:'f14',name:'陈云',years:'1905—1995',avatar:'📊',brief:'中国社会主义经济建设的开创者和奠基人之一。',category:'建设',tags:['经济','建设'],events:[{year:'1905',text:'生于江苏省青浦县'},{year:'1921',text:'在上海商务印书馆参加工运，后加入中国共产党'},{year:'1935',text:'参加长征，后赴苏联学习'},{year:'1944',text:'主持西北财经工作，保障延安根据地供给'},{year:'1978',text:'在十一届三中全会上重新参与中央领导工作'},{year:'1995',text:'4月10日在北京逝世'}]},
+  {id:'f15',name:'任弼时',years:'1904—1950',avatar:'📜',brief:'中国共产党早期主要领导人之一，杰出的无产阶级革命家。',category:'建党',tags:['建党','政治'],events:[{year:'1904',text:'生于湖南省湘阴县'},{year:'1922',text:'转为中共党员，时年18岁'},{year:'1934',text:'任红六军团政治委员会主席，创建湘鄂川黔根据地'},{year:'1945',text:'在中共七届一中全会上与毛泽东等并称"五大书记"'},{year:'1950',text:'10月27日在北京逝世，年仅46岁'}]},
+];
+
+// ═══════════════════════════════════════════════
+// TODAY EVENTS (June 12)
+// ═══════════════════════════════════════════════
+const todayEvents = [
+  {year:'1923',title:'京汉铁路工人大罢工',desc:'京汉铁路工人在郑州举行大罢工，遭到军阀吴佩孚的血腥镇压，林祥谦、施洋等工人领袖惨遭杀害。',era:'建党',color:'red'},
+  {year:'1935',title:'两河口会议',desc:'中共中央在四川懋功两河口召开政治局会议，决定红一、四方面军共同北上，建立川陕甘根据地。',era:'土地革命',color:'red'},
+  {year:'1942',title:'毛泽东号召全党开展整风运动',desc:'毛泽东在延安发表《反对党八股》讲话，号召全党开展整风运动，反对主观主义、宗派主义和党八股。',era:'抗战',color:'red'},
+  {year:'1950',title:'中苏友好同盟互助条约签订',desc:'毛泽东、周恩来访问苏联期间，两国签订《中苏友好同盟互助条约》，取代旧的《中苏友好同盟条约》。',era:'建设',color:'gold'},
+  {year:'1965',title:'中国完全自主设计建造万吨轮',desc:'中国自行设计、全部采用国产材料建造的第一艘万吨级远洋货轮"东风"号在大连下水。',era:'建设',color:'green'},
+  {year:'1988',title:'海南建省',desc:'海南省正式成立，成为中国最大的经济特区，海南进入跨越式发展新阶段。',era:'建设',color:'gold'},
+];
+
+const provinceCenters = {
+"北京":[39.91,116.39],"上海":[31.23,121.47],"天津":[39.13,117.20],"重庆":[29.56,106.55],
+"河北":[38.04,114.51],"山西":[37.86,112.55],"辽宁":[41.80,123.43],"吉林":[43.89,125.32],
+"黑龙江":[47.86,127.77],"江苏":[32.06,118.80],"浙江":[30.28,120.16],"安徽":[31.83,117.21],
+"福建":[26.08,118.30],"江西":[28.68,115.86],"山东":[36.65,117.00],"河南":[34.77,113.75],
+"湖北":[30.58,114.31],"湖南":[28.23,112.94],"广东":[23.15,113.26],"海南":[19.57,109.78],
+"四川":[30.58,104.07],"贵州":[26.60,106.71],"云南":[25.04,102.71],"陕西":[37.20,109.50],
+"甘肃":[37.80,101.77],"青海":[36.62,101.78],"内蒙古":[44.10,111.67],"广西":[25.28,108.90],
+"西藏":[31.14,88.14],"宁夏":[37.20,106.27],"新疆":[41.81,86.16],"台湾":[25.04,121.56],
+};
+
+const colorMap = {red:'#C0392B',gold:'#D4AF37',green:'#27AE60',blue:'#5DADE2'};
+
+// ═══════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════
+let activeEventId = null;
+let currentView = 'timeline';
+let tlEra = 'all';
+let mapEra = 'all';
+let mapType = 'all';
+let zoomLevel = 0; // 0=century, 1=decade, 2=year
+let zoomLevels = ['世纪','年代','年'];
+let mapView = 'scatter';
+let mapRoutes = [];
+let isDragging = false, dragStartX = 0, scrollStartX = 0;
+let mapChart = null;
+let mapLoaded = false;
+let mapSelectedProvince = null;
+
+// ═══════════════════════════════════════════════
+// GLOBAL STATS
+// ═══════════════════════════════════════════════
+function updateGlobalStats() {
+  const total = redData.length;
+  const provs = new Set(redData.map(d => d.province)).size;
+  document.getElementById('gPlaces').textContent = total;
+  document.getElementById('gEvents').textContent = total;
+  document.getElementById('gProvinces').textContent = provs;
+}
+
+// ═══════════════════════════════════════════════
+// TIMELINE
+// ═══════════════════════════════════════════════
+function tlFilter(btn, era) {
+  document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tlEra = era;
+  renderTimeline();
+}
+
+function cycleZoom() {
+  zoomLevel = (zoomLevel + 1) % 3;
+  document.getElementById('zoom-level').textContent = zoomLevels[zoomLevel];
+  renderTimeline();
+}
+
+function changeZoom(dir) {
+  zoomLevel = Math.max(0, Math.min(2, zoomLevel + dir));
+  document.getElementById('zoom-level').textContent = zoomLevels[zoomLevel];
+  renderTimeline();
+}
+
+function getTlFiltered() {
+  return redData.filter(d => tlEra === 'all' || d.era === tlEra);
+}
+
+function renderTimeline() {
+  const data = getTlFiltered();
+  const container = document.getElementById('eventsContainer');
+  const eraLabels = document.getElementById('eraLabels');
+
+  const MIN_YEAR = 1890, MAX_YEAR = 2025;
+  const TOTAL_WIDTH = 3000;
+  const CENTER_Y = 50; // %
+
+  // Year to x position
+  function xPos(year) {
+    return ((year - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * TOTAL_WIDTH;
+  }
+
+  // Determine container width based on zoom
+  let containerWidth = TOTAL_WIDTH;
+  if (zoomLevel === 1) { // decade
+    const minY = Math.min(...data.map(d => d.x));
+    const maxY = Math.max(...data.map(d => d.x));
+    containerWidth = ((maxY - minY + 10) / (MAX_YEAR - MIN_YEAR)) * TOTAL_WIDTH + 400;
+  } else if (zoomLevel === 2) { // year - show ±5 years
+    const minY = Math.min(...data.map(d => d.x));
+    const maxY = Math.max(...data.map(d => d.x));
+    containerWidth = ((maxY - minY + 20) / (MAX_YEAR - MIN_YEAR)) * TOTAL_WIDTH + 400;
+  }
+  document.getElementById('tlInner').style.width = containerWidth + 'px';
+
+  // Era background labels
+  const eras = [
+    { name:'建党时期', start:1921, end:1937, color:'rgba(212,175,55,0.04)' },
+    { name:'土地革命', start:1927, end:1937, color:'rgba(192,57,43,0.05)' },
+    { name:'抗日战争', start:1937, end:1945, color:'rgba(192,57,43,0.06)' },
+    { name:'解放战争', start:1945, end:1949, color:'rgba(212,175,55,0.04)' },
+    { name:'建国后', start:1949, end:2025, color:'rgba(39,174,96,0.03)' },
+  ];
+
+  eraLabels.innerHTML = eras
+    .filter(e => tlEra === 'all' || (tlEra === '建党' && e.start >= 1921) || tlEra === '土地革命' || tlEra === '抗战' || tlEra === '解放' || tlEra === '建设')
+    .map(e => {
+      const l = xPos(e.start), r = xPos(Math.min(e.end, MAX_YEAR));
+      return '<div style="position:absolute;top:0;bottom:0;left:' + l + 'px;width:' + Math.max(1, r - l) + 'px;background:' + e.color + ';border-left:1px solid rgba(139,0,0,0.1)"></div>';
+    }).join('');
+
+  // Year markers
+  const yearMarkers = [];
+  for (let y = 1890; y <= 2025; y += zoomLevel === 0 ? 10 : zoomLevel === 1 ? 5 : 2) {
+    yearMarkers.push('<div class="year-marker" style="left:' + xPos(y) + 'px">' + y + '</div>');
+  }
+
+  // Event nodes
+  const topEvents = data.filter((_, i) => i % 2 === 0);
+  const bottomEvents = data.filter((_, i) => i % 2 !== 0);
+
+  function makeNode(d, idx, isTop) {
+    const xp = xPos(d.x);
+    const color = colorMap[d.color] || '#C0392B';
+    const dotClass = d.color;
+    const lineH = zoomLevel === 0 ? 60 : zoomLevel === 1 ? 45 : 30;
+    return '<div class="event-node ' + (isTop ? 'top' : 'bottom') + '" style="left:' + xp + 'px" onclick="toggleEventCard(' + d.id + ')">' +
+      '<div class="event-dot ' + dotClass + '"></div>' +
+      '<div class="event-card">' +
+      '<div class="event-year">' + d.year + '年 · ' + d.era + '</div>' +
+      '<div class="event-title">' + d.title + '</div>' +
+      '<div class="event-desc">' + d.desc.substring(0, 60) + '...</div>' +
+      '<div><span class="event-tag era">' + d.era + '</span> <span class="event-tag type">' + d.type + '</span></div>' +
+      '</div>' +
+      '<div class="event-line" style="height:' + lineH + 'px"></div>' +
+      '</div>';
+  }
+
+  container.innerHTML =
+    '<div style="position:absolute;left:0;right:0;top:' + CENTER_Y + '%;height:0">' +
+    yearMarkers.join('') +
+    topEvents.map((d, i) => makeNode(d, i, true)).join('') +
+    bottomEvents.map((d, i) => makeNode(d, i, false)).join('') +
+    '</div>';
+}
+
+// Drag to scroll (mouse + touch)
+function startDrag(e) {
+  isDragging = true;
+  dragStartX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+  scrollStartX = document.getElementById('tlScroll').scrollLeft;
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('touchmove', onDragTouch, {passive:false});
+  document.addEventListener('touchend', stopDragTouch);
+}
+function onDrag(e) {
+  if (!isDragging) return;
+  const dx = dragStartX - e.clientX;
+  document.getElementById('tlScroll').scrollLeft = scrollStartX + dx;
+}
+function onDragTouch(e) {
+  if (!isDragging) return;
+  e.preventDefault();
+  const dx = dragStartX - (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+  document.getElementById('tlScroll').scrollLeft = scrollStartX + dx;
+}
+function stopDrag() {
+  isDragging = false;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', onDragTouch);
+  document.removeEventListener('touchend', stopDragTouch);
+}
+function stopDragTouch() {
+  isDragging = false;
+  document.removeEventListener('touchmove', onDragTouch);
+  document.removeEventListener('touchend', stopDragTouch);
+}
+
+// ═══════════════════════════════════════════════
+// DETAIL OVERLAY
+// ═══════════════════════════════════════════════
+function openDetail(id) {
+  const d = redData.find(x => x.id === id);
+  if (!d) return;
+  document.getElementById('detailContent').innerHTML =
+    '<div class="detail-back" onclick="closeDetail()">← 返回</div>' +
+    '<div class="detail-tabs">' +
+    "<span class='detail-tab' onclick=\"event.stopPropagation();closeDetail();setTimeout(function(){switchTab('timeline')},50)\">时间轴</span>" +
+    "<span class='detail-tab' onclick=\"event.stopPropagation();closeDetail();setTimeout(function(){switchTab('map')},50)\">空间轴</span>" +
+    '</div>' +
+    '<div class="detail-year">' + d.year + '年 · ' + d.era + '</div>' +
+    '<div class="detail-place">GEO ' + d.place + ' · ' + d.province + '省</div>' +
+    '<div class="detail-title">' + d.title + '</div>' +
+    '<div class="detail-divider"></div>' +
+    '<div class="detail-desc">' + d.desc + '</div>' +
+    (d.quote ? '<div class="detail-quote">"' + d.quote + '"</div>' : '') +
+    '<div class="detail-tags">' +
+    '<span class="detail-tag r">' + d.era + '</span>' +
+    '<span class="detail-tag g">' + d.type + '</span>' +
+    '<span class="detail-tag b">' + d.province + '省</span>' +
+    '<span class="detail-tag g">' + d.place + '</span>' +
+    '</div>';
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// STORY / NARRATIVE THREADS
+// ═══════════════════════════════════════════════
+var storyChapters = [
+  {
+    id:'ch1', num:'01', era:'建党时期', years:'1921—1927',
+    title:'开天辟地 · 党诞生',
+    narrative:'1921年7月，13位代表从全国各地汇聚上海兴业路76号，秘密召开中共一大，宣告中国共产党诞生。这一开天辟地的大事变，深刻改变了中华民族的前途命运。从上海石库门到嘉兴南湖，一艘小船承载起民族复兴的千钧重量。中国共产党的成立，是中华民族发展史上开天辟地的大事，从此中国革命的面貌焕然一新。',
+    quote:'只有中国共产党，才能救中国',
+    themes:['中共一大','中共二大','工人运动'],
+    themeIds:[[94],[97],[47,48]],
+    milestones:[
+      {year:'1920.8', text:'《共产党宣言》中文全译本在上海出版，陈望道潜心翻译，真理的味道非常甜的故事传遍大江南北，马克思主义开始在中国广泛传播，为建党奠定思想基础'},
+      {year:'1921.7.23', text:'13位平均年龄仅28岁的代表从各地秘密汇聚上海，后转移至嘉兴南湖游船上召开中共一大。外国暗探闯入迫使会议中断，代表们机智应对化险为夷，宣告中国共产党成立'},
+      {year:'1922.7.16', text:'中共二大在上海召开，制定反帝反封建的民主革命纲领，第一次明确提出彻底的反帝反封建革命纲领，为革命指明方向'},
+      {year:'1925.5.30', text:'上海工人学生上街抗议，声援被日本资本家枪杀的工人顾正红。南京路巡捕开枪酿成五卅惨案，激起全国反帝怒潮，香港广州20万工人参加反帝大罢工'},
+      {year:'1926.7.9', text:'国民革命军正式出师北伐，以叶挺独立团为先锋势如破竹，连克长沙武汉，沉重打击帝国主义和封建军阀势力'}
+    ]
+  },
+  {
+    id:'ch2', num:'02', era:'土地革命', years:'1927—1935',
+    title:'星火燎原 · 农村包围城市',
+    narrative:'大革命失败后，中国共产党领导的南昌起义打响了武装反抗的第一枪；秋收起义引兵井冈，建立第一个农村革命根据地；广州起义虽败犹荣。三大起义标志着中国共产党独立领导革命战争、创建人民军队的开始。从井冈山到中央苏区，"农村包围城市、武装夺取政权"的革命道路逐步形成，为中国革命找到了正确方向。',
+    quote:'星星之火，可以燎原',
+    themes:['南昌起义','井冈山根据地','遵义会议'],
+    themeIds:[[49],[4],[74]],
+    milestones:[
+      {year:'1927.8.1', text:'凌晨两点，周恩来贺龙叶挺朱德等率两万余人在南昌城头打响起义枪声，与敌军激战至黎明占领全城，八一成为人民军队的诞生日'},
+      {year:'1927.9.9', text:'湘赣边界秋收起义爆发，受挫后毛泽东放弃攻打长沙的原定计划，率领起义部队转向敌人力量薄弱的农村进军井冈山，开辟中国革命新道路'},
+      {year:'1929.12.28', text:'红四军第九次党代表大会在福建上杭古田召开，通过由毛泽东起草的决议案，确立党对军队的绝对领导，铸就人民军队的军魂'},
+      {year:'1931.11.7', text:'中华苏维埃共和国临时中央政府在江西瑞金成立，毛泽东任主席，从此有了与国民党政权对峙的红色国家机器，各项建设逐步展开'},
+      {year:'1935.1.15', text:'遵义城中中央政治局扩大会议连开三天，周恩来等支持毛泽东参与军事指挥，遵义会议成为党的历史上生死攸关的转折点'}
+    ]
+  },
+  {
+    id:'ch3', num:'03', era:'抗日战争', years:'1931—1945',
+    title:'中流砥柱 · 全民族抗战',
+    narrative:'九一八事变后，东北抗日联军在白山黑水间坚持战斗14年；七七事变全面抗战爆发，中国共产党推动建立抗日民族统一战线。平型关大捷打破日军不可战胜神话，百团大战振奋全国民心。延安成为指引抗战胜利的灯塔，无数仁人志士奔赴宝塔山下。十四年浴血奋战，中国以伤亡3500万人的代价，换来了民族解放的最终胜利。',
+    quote:'为有牺牲多壮志，敢教日月换新天',
+    themes:['东北抗联','平型关大捷','百团大战纪念馆'],
+    themeIds:[[60],[15],[16]],
+    milestones:[
+      {year:'1931.9.18', text:'夜10点20分关东军炸毁南满铁路柳条湖段，嫁祸中国军队，随即攻占沈阳北大营，三个月内东北全境沦陷，抗联战士孤悬敌后坚持战斗14年'},
+      {year:'1936.12.12', text:'张学良杨虎城在西安扣押蒋介石，震惊中外。中国共产党以民族大义为重力主和平解决，最终蒋介石接受停止内战一致抗日的主张，抗日民族统一战线形成'},
+      {year:'1937.7.7', text:'卢沟桥畔宛平城下日军借口士兵失踪要求进入县城搜查，守桥二一九团奋起抵抗，全民族抗战由此爆发。毛泽东立即通电全国呼吁全民族团结抗战'},
+      {year:'1937.9.25', text:'凌晨林彪指挥八路军一一五师在平型关设伏，激战一日歼敌千余人。平型关大捷是全国抗战爆发后取得的第一个大胜仗，打破了日军不可战胜的神话'},
+      {year:'1940.8.20', text:'深夜八路军105个团40万人对华北日军发起大规模破袭战，历时三个半月作战1824次，有力打击了日伪军的囚笼政策，振奋了全国军民的抗战信心'},
+      {year:'1945.8.15', text:'日本天皇裕仁广播停战诏书，宣布接受波茨坦公告无条件投降，举国欢腾。抗战胜利是中国近代以来反抗外敌入侵的第一次完全胜利'}
+    ]
+  },
+  {
+    id:'ch4', num:'04', era:'解放战争', years:'1945—1949',
+    title:'摧枯拉朽 · 建国大业',
+    narrative:'抗战胜利后，国民党撕毁停战协定，内战全面爆发。人民解放军以少胜多、以弱胜强：辽沈、淮海、平津三大战役，歼敌154万，解放全东北、华北、华东；渡江战役解放南京，宣告国民党政权覆灭。从西柏坡到北京，党中央指挥了决定中国命运的战略大决战。1949年10月1日，五星红旗在天安门广场升起——中国人民从此站起来了。',
+    quote:'钟山风雨起苍黄，百万雄师过大江',
+    themes:['三大战役','渡江战役','开国大典'],
+    themeIds:[[56,57,58],[80],[54]],
+    milestones:[
+      {year:'1946.6.26', text:'拂晓国民党30万大军进攻中原解放区，李先念王震部按预定计划分路突围，国民党撕毁停战协定内战全面爆发，毛泽东提出一切反动派都是纸老虎的著名论断'},
+      {year:'1948.9.12', text:'东北野战军突然包围锦州断敌退路。廖耀湘西进兵团在黑山大虎山遭顽强阻击，激战五昼夜全军覆没。辽沈战役首战告捷，解放军首次在战略决战中取胜'},
+      {year:'1948.11.6', text:'华东野战军在中野配合下发起淮海战役，65万解放军对抗80万敌军。人民群众用小推车支前，陈毅说淮海战役的胜利是人民群众用小车推出来的'},
+      {year:'1949.1.14', text:'东北野战军对天津发起总攻，29小时激战全歼守军13万人。傅作义接受和平改编，北平和平解放，满城百姓箪食壶浆迎接入城部队'},
+      {year:'1949.4.20', text:'午夜人民解放军在西起江西湖口东至江苏江阴千里战线上发起渡江战役，千帆竞发万炮齐鸣，仅两天便突破敌军防线。4月23日攻占南京，国民党政权覆灭'},
+      {year:'1949.10.1', text:'天安门广场30万人齐聚，毛泽东庄严宣告中华人民共和国成立了，54门礼炮齐鸣28响，五星红旗冉冉升起，盛大的阅兵式和群众游行持续到晚间'}
+    ]
+  },
+  {
+    id:'ch5', num:'05', era:'建国初期', years:'1949—1966',
+    title:'艰辛探索 · 社会主义建设',
+    narrative:'新中国成立后，面临严峻考验：在国际上遭受帝国主义封锁，在百废待兴中恢复国民经济。土地改革让3亿农民分得土地，"一五"计划奠定工业化基础，武汉长江大桥一桥飞架南北，大庆油田甩掉"贫油"帽子。1964年原子弹成功爆炸，1967年氢弹成功实验——中华民族脊梁从此挺直。然而，探索的道路并非一帆风顺，其中亦有曲折与教训。',
+    quote:'我们不但善于破坏一个旧世界，我们还将善于建设一个新世界',
+    themes:['土地改革','一五计划','两弹一星'],
+    themeIds:[[44],[63,64],[33]],
+    milestones:[
+      {year:'1950.6.29', text:'《中华人民共和国土地改革法》颁布实施，废除封建土地所有制，没收地主土地分配给无地和少地的农民，三亿农民分得土地，农村生产力得到极大解放'},
+      {year:'1953.6.15', text:'毛泽东在中央政治局会议上首次提出党在过渡时期的总路线，一五计划开始实施，以苏联援助的156项重点工程为中心集中力量发展重工业，中国工业化进程由此起步'},
+      {year:'1957.10.15', text:'武汉长江大桥正式通车，这是新中国成立后第一座跨越长江的桥梁，一桥飞架南北天堑变通途，结束了京广铁路全线贯通需要摆渡的历史'},
+      {year:'1959.9.26', text:'松嫩平原松基三井喷出黑色油流，大庆油田被发现。此前外国专家断言中国贫油，李四光等地质学家坚持己见用独创理论指导找油，贫油论从此不攻自破'},
+      {year:'1964.10.16', text:'下午3时罗布泊深处一声巨响，巨大蘑菇云腾空而起，中国第一颗原子弹爆炸成功，举国振奋，中国成为世界第五个拥有核武器的国家，打破了核垄断'},
+      {year:'1966.10.27', text:'中国成功进行导弹核武器试验，携带核弹头的导弹精确命中预定区域，标志着中国从此掌握了导弹核武器技术，拥有了可用于实战的核打击能力'}
+    ]
+  },
+  {
+    id:'ch6', num:'06', era:'曲折年代', years:'1966—1978',
+    title:'曲折中前行 · 风雨兼程',
+    narrative:'十年特殊时期给党和国家带来严重损失。但在艰难时刻，仍有无数共产党人和人民群众坚守信念："工业学大庆""农业学大寨"展现自力更生精神。大庆油田甩掉贫油帽子，武汉长江大桥一桥飞架南北。1964年原子弹爆炸成功，中国打破核垄断。1978年党的十一届三中全会召开，中国迎来历史性转折——改革开放的春风吹遍神州大地。',
+    quote:'道路是曲折的，前途是光明的',
+    themes:['一五计划','大庆油田','原子弹爆炸'],
+    themeIds:[[63],[64],[32]],
+    milestones:[
+      {year:'1966.5.16', text:'中央政治局扩大会议通过《五·一六通知》，文化大革命全面发动。这一特殊时期给党和国家带来严重损失，令人扼腕叹息，留下了宝贵的历史教训'},
+      {year:'1971.10.25', text:'第26届联合国大会以压倒性多数通过第2758号决议，承认中华人民共和国政府的代表是中国在联合国的唯一合法代表，消息传来北京满城欢腾'},
+      {year:'1977.8.12', text:'中共十一大宣布文化大革命结束，同年冬天中断十年的高考制度恢复，570万考生走进考场，无数知识青年重新看到了通过个人奋斗改变命运的希望'},
+      {year:'1978.12.18', text:'十一届三中全会在北京召开，确立解放思想实事求是的思想路线，作出把党和国家工作中心转移到经济建设上来实行改革开放的历史性决策，中国迎来历史性转折'}
+    ]
+  },
+  {
+    id:'ch7', num:'07', era:'改革开放', years:'1978—2012',
+    title:'改革开放 · 春天故事',
+    narrative:'1978年冬，安徽小岗村18户农民秘密签订"生死契约"，拉开中国农村改革序幕。1980年深圳等经济特区设立，"春天的故事"传遍大江南北。1997年香港回归，"一国两制"伟大构想付诸实践。2001年中国加入WTO，2008年北京奥运会惊艳世界。从计划经济到市场经济，从封闭半封闭到全方位开放，中国创造了人类历史上前所未有的发展奇迹。',
+    quote:'发展才是硬道理',
+    themes:['小岗村大包干','深圳特区','港珠澳大桥'],
+    themeIds:[[38],[37],[43]],
+    milestones:[
+      {year:'1978.12.16', text:'安徽凤阳县小岗村18户农民秘密签订生死契约，将集体土地分到户实行大包干，按下手印的当晚生产队长严俊昌彻夜未眠，这一举动拉开了中国农村改革的序幕'},
+      {year:'1980.8.26', text:'深圳珠海汕头厦门经济特区正式设立，中央赋予特殊政策，经济特区以敢闯敢试的精神在引进外资发展外贸探索市场经济的道路上先行先试'},
+      {year:'1992.1.18', text:'邓小平视察武昌深圳珠海上海等地，发表系列谈话，提出社会主义市场经济和发展才是硬道理等重要论断，廓清了困扰人们多年的理论迷雾，改革开放的航船再次拔锚启程'},
+      {year:'1997.7.1', text:'零时整香港会议展览中心新翼大厅，中英两国政府香港政权交接仪式举行，五星红旗和紫荆花区旗冉冉升起，历经百年漂泊的香港终于回到祖国怀抱'},
+      {year:'2001.12.11', text:'卡塔尔首都多哈，中国正式签署加入世界贸易组织议定书，从1986年申请复关到2001年正式入世，15年漫漫征途，中国从此全面融入全球经济体系'},
+      {year:'2008.8.8', text:'第29届夏季奥林匹克运动会在北京开幕，2008名演员吟诵有朋自远方来不亦乐乎，北京奥运会集齐204个国家和地区刷新参赛规模纪录，世界为之惊艳'}
+    ]
+  },
+  {
+    id:'ch8', num:'08', era:'新时代', years:'2012—',
+    title:'民族复兴 · 迈向新征程',
+    narrative:'2012年党的十八大，中国特色社会主义进入新时代。从脱贫攻坚到乡村振兴，从科技创新到文化繁荣，从绿水青山到一带一路，新时代的中国书写着民族复兴的壮丽诗篇。2021年中国共产党成立100周年，第一个百年奋斗目标如期实现；2022年党的二十大擘画全面建设社会主义现代化国家新蓝图。百年红轴，指向民族复兴的星辰大海。',
+    quote:'请党放心，强国有我',
+    themes:['北京冬奥会','G20杭州峰会','雄安新区'],
+    themeIds:[[41],[40],[39]],
+    milestones:[
+      {year:'2012.11.8', text:'党的十八大在北京人民大会堂召开，胡锦涛作报告提出全面建成小康社会的宏伟目标，习近平当选中共中央总书记，中国特色社会主义进入新时代'},
+      {year:'2013.9.7', text:'国家主席习近平在哈萨克斯坦纳扎尔巴耶夫大学演讲，首次提出共建丝绸之路经济带的倡议，此后丝绸之路经济带和21世纪海上丝绸之路共同构成一带一路重大国际合作倡议'},
+      {year:'2017.4.1', text:'河北雄安新区设立，这是继深圳经济特区和浦东新区之后又一个具有全国意义的新区，雄安新区坚持生态优先绿色发展，致力于建设绿色低碳信息智能宜居宜业的现代化新城'},
+      {year:'2019.10.1', text:'新中国成立70周年庆祝大会在北京天安门广场隆重举行，20余万军民参加盛典，习近平庄严宣告没有任何力量能够撼动我们伟大祖国的地位'},
+      {year:'2021.7.1', text:'庆祝中国共产党成立100周年大会在天安门广场举行，习近平庄严宣告，经过全党全国各族人民持续奋斗，我们实现了第一个百年奋斗目标，在中华大地上全面建成了小康社会'},
+      {year:'2022.2.4', text:'北京第二十四届冬季奥林匹克运动会开幕，开幕式以一起向未来为主题，奥运圣火在鸟巢点燃，北京成为历史上首座双奥之城'}
+    ]
+  }];
+
+function renderStory() {
+  var container = document.getElementById('storyContainer');
+  var nav = document.getElementById('storyNav');
+  if (!container) return;
+  container.innerHTML = storyChapters.map(function(ch, idx) {
+    var milestones = ch.milestones ? ch.milestones.map(function(m) {
+      return '<div class="story-milestone"><span class="story-milestone-year">' + m.year + '</span><span class="story-milestone-text">' + m.text + '</span></div>';
+    }).join('') : '';
+    var themes = ch.themes.map(function(t, i) {
+      return '<div class="story-theme" onclick="openDetail(' + ch.themeIds[i][0] + ')">' + t + '</div>';
+    }).join('');
+    return '<div class="story-chapter" id="' + ch.id + '" data-idx="' + idx + '" onclick="storyChapterClick(this)">' +
+      '<div class="story-chapter-num">' + ch.num + '</div>' +
+      '<div class="story-chapter-body">' +
+        '<div class="story-chapter-meta">' +
+          '<span class="story-chapter-era">' + ch.era + '</span>' +
+          '<span class="story-chapter-years">' + ch.years + '</span>' +
+        '</div>' +
+        '<div class="story-chapter-title">' + ch.title + '</div>' +
+        '<div class="story-chapter-narrative">' + ch.narrative + '</div>' +
+        '<div class="story-chapter-milestones"><div class="story-milestones-label">关键节点</div>' + milestones + '</div>' +
+        '<div class="story-chapter-quote">"' + ch.quote + '"</div>' +
+        '<div class="story-chapter-themes">' + themes + '</div>' +
+        '<div class="story-chapter-cta">→ 点击进入时间轴查看详情</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // Nav dots
+  if (nav) {
+    nav.innerHTML = storyChapters.map(function(ch, i) {
+      return '<div class="story-nav-dot" data-idx="' + i + '" onclick="storyScrollTo(' + i + ')"></div>';
+    }).join('');
+  }
+  // Intersection Observer for entrance animation
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.story-chapter').forEach(function(el) {
+    observer.observe(el);
+  });
+  // Active chapter on scroll
+  document.getElementById('storyScroll').onscroll = function() {
+    var chapters = document.querySelectorAll('.story-chapter');
+    var scroll = this;
+    chapters.forEach(function(ch) {
+      var rect = ch.getBoundingClientRect();
+      var active = rect.top < window.innerHeight * 0.5 && rect.bottom > 0;
+      ch.classList.toggle('active', active);
+    });
+    var dots = document.querySelectorAll('.story-nav-dot');
+    chapters.forEach(function(ch, i) {
+      var rect = ch.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.5 && rect.bottom > 0) {
+        dots.forEach(function(d) { d.classList.remove('active'); });
+        dots[i] && dots[i].classList.add('active');
+      }
+    });
+  };
+}
+
+function storyChapterClick(el) {
+  el.classList.toggle('active');
+}
+
+function storyScrollTo(idx) {
+  var el = document.getElementById('storyChapters') || document.querySelectorAll('.story-chapter')[idx];
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function switchTab(tab) {
+  currentView = tab;
+  document.getElementById('view-timeline').style.display = tab === 'timeline' ? 'flex' : 'none';
+  document.getElementById('view-map').style.display = tab === 'map' ? 'flex' : 'none';
+  document.getElementById('view-story').style.display = tab === 'story' ? 'flex' : 'none';
+  document.getElementById('view-figures').style.display = tab === 'figures' ? 'flex' : 'none';
+  document.getElementById('tab-timeline').classList.toggle('active', tab === 'timeline');
+  document.getElementById('tab-map').classList.toggle('active', tab === 'map');
+  document.getElementById('tab-story').classList.toggle('active', tab === 'story');
+  document.getElementById('tab-figures').classList.toggle('active', tab === 'figures');
+  if (tab === 'map' && !mapLoaded) { mapLoaded = true; initMap(); }
+  if (tab === 'story') { setTimeout(renderStory, 50); }
+  if (tab === 'figures') { renderFigures(); }
+  updateGlobalStats();
+}
+function mapFilterEra(btn, era) {
+  document.querySelectorAll('[data-mfilter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  mapEra = era;
+  mapUpdate();
+}
+
+function mapFilterType(btn, type) {
+  document.querySelectorAll('[data-mtype]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  mapType = type;
+  mapUpdate();
+}
+
+function mapSetView(view) {
+  mapView = view;
+  document.getElementById('ctrl-scatter').classList.toggle('active', view === 'scatter');
+  document.getElementById('ctrl-heatmap').classList.toggle('active', view === 'heatmap');
+  document.getElementById('mapView-scatter').classList.toggle('active', view === 'scatter');
+  document.getElementById('mapView-heatmap').classList.toggle('active', view === 'heatmap');
+  mapUpdate();
+}
+
+function mapToggleRoute(key) {
+  var idx = mapRoutes.indexOf(key);
+  if (idx >= 0) mapRoutes.splice(idx, 1);
+  else mapRoutes.push(key);
+  document.getElementById('ctrl-cz') && document.getElementById('ctrl-cz').classList.toggle('active', mapRoutes.includes('cz'));
+  document.getElementById('ctrl-ya') && document.getElementById('ctrl-ya').classList.toggle('active', mapRoutes.includes('ya'));
+  document.getElementById('mapRoute-cz') && document.getElementById('mapRoute-cz').classList.toggle('active', mapRoutes.includes('cz'));
+  document.getElementById('mapRoute-ya') && document.getElementById('mapRoute-ya').classList.toggle('active', mapRoutes.includes('ya'));
+  mapUpdate();
+}
+
+function mapReset() {
+  mapEra = 'all'; mapType = 'all'; mapView = 'scatter'; mapRoutes = [];
+  document.querySelectorAll('[data-mfilter]').forEach(b => b.classList.toggle('active', b.dataset.mfilter === 'all'));
+  document.querySelectorAll('[data-mtype]').forEach(b => b.classList.toggle('active', b.dataset.mtype === 'all'));
+  mapSetView('scatter');
+  mapCloseInfo();
+  mapUpdate();
+}
+
+function mapGetFiltered() {
+  return redData.filter(d => {
+    const eraOk = mapEra === 'all' || d.era === mapEra;
+    const typeOk = mapType === 'all' || d.type === mapType;
+    const provOk = !mapSelectedProvince || d.province === mapSelectedProvince;
+    return eraOk && typeOk && provOk;
+  });
+}
+
+function buildMapOption() {
+  var filtered = mapGetFiltered();
+  var scatterData = filtered.map(function(d) {
+    return { name: d.name, value: [d.lng, d.lat], id: d.id, itemStyle: { color: colorMap[d.color] } };
+  });
+
+  var heatData = {};
+  filtered.forEach(function(d) { heatData[d.province] = (heatData[d.province] || 0) + 1; });
+
+  var routeMap = {
+    cz: { name: '长征路线', color: '#E74C3C', points: [[121.47,31.23],[120.15,30.27],[105.99,28.43],[102.05,30.05],[103.35,29.59],[97.17,31.16],[109.49,36.60]] },
+    ya: { name: '延安之路', color: '#D4AF37', points: [[115.86,27.80],[116.46,31.82],[109.49,36.60]] },
+  };
+
+  var series = [];
+
+  if (mapView === 'scatter') {
+    series.push({
+      name: '省份背景', type: 'scatter', coordinateSystem: 'geo',
+      data: Object.entries(heatData).map(function(e) {
+        var c = provinceCenters[e[0]];
+        return { name: e[0], value: [c ? c[1] : 0, c ? c[0] : 0, e[1]], symbolSize: Math.max(8, Math.min(20, e[1] * 4)) };
+      }),
+      label: { show: true, formatter: '{b}', position: 'inside', fontSize: 8, color: 'rgba(253,246,227,0.5)', fontFamily: 'Noto Sans SC' },
+      itemStyle: { color: 'rgba(192,57,43,0.12)', borderColor: 'rgba(192,57,43,0.25)', borderWidth: 1 },
+      silent: true, zlevel: 1,
+    });
+    series.push({
+      name: '红色坐标', type: 'effectScatter', coordinateSystem: 'geo',
+      data: scatterData, symbolSize: 11,
+      showEffectOn: 'render', rippleEffect: { brushType: 'stroke', scale: 4 },
+      itemStyle: { shadowBlur: 10, shadowColor: 'rgba(192,57,43,0.5)' },
+      label: { formatter: '{b}', position: 'right', show: false, fontSize: 10, color: '#FDF6E3', fontFamily: 'Noto Sans SC' },
+      emphasis: { scale: true, label: { show: true, formatter: '{b}', position: 'top', fontSize: 11, color: '#D4AF37' } },
+      zlevel: 3,
+    });
+  } else {
+    series.push({
+      name: '省份热力', type: 'map', map: 'China',
+      roam: true, zoom: 1.2, center: [105, 36],
+      itemStyle: { areaColor: '#1A0A00', borderColor: 'rgba(139,0,0,0.35)', borderWidth: 1 },
+      emphasis: { itemStyle: { areaColor: '#C0392B', shadowBlur: 20, shadowColor: 'rgba(192,57,43,0.7)' }, label: { show: true, color: '#fff', fontFamily: 'Noto Sans SC', fontSize: 12 } },
+      select: { disabled: true },
+      data: Object.entries(heatData).map(function(e) { return { name: e[0], value: e[1] }; }),
+      zlevel: 1,
+    });
+    series.push({
+      name: '热点', type: 'effectScatter', coordinateSystem: 'geo',
+      data: scatterData, symbolSize: 9,
+      showEffectOn: 'render', rippleEffect: { brushType: 'stroke', scale: 3 },
+      itemStyle: { color: '#FF6B6B', shadowBlur: 8, shadowColor: 'rgba(255,107,107,0.5)' },
+      label: { formatter: '{b}', position: 'right', show: false, fontSize: 9, color: '#FF6B6B', fontFamily: 'Noto Sans SC' },
+      emphasis: { scale: true, label: { show: true, formatter: '{b}', position: 'top', fontSize: 11, color: '#FF6B6B' } },
+      zlevel: 3,
+    });
+  }
+
+  mapRoutes.forEach(function(key) {
+    var r = routeMap[key];
+    if (r) {
+      series.push({
+        name: r.name, type: 'lines', coordinateSystem: 'geo', polyline: true,
+        data: [{ coords: r.points.map(function(p) { return [p[0], p[1]]; }) }],
+        lineStyle: { color: r.color, width: 3, opacity: 0.8, curveness: 0.1 },
+        effect: { show: true, period: 6, trailLength: 0.4, symbol: 'circle', symbolSize: 5, color: r.color },
+        zlevel: 4,
+      });
+    }
+  });
+
+  return {
+    backgroundColor: '#0D0500',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(26,10,0,0.96)',
+      borderColor: 'rgba(192,57,43,0.5)',
+      borderWidth: 1,
+      textStyle: { color: '#FDF6E3', fontFamily: 'Noto Sans SC', fontSize: 12 },
+      formatter: function(p) {
+        if ((p.seriesType === 'effectScatter' || p.seriesType === 'scatter') && p.name) {
+          var d = redData.find(function(x) { return x.name === p.name; });
+          if (d) return '<div style="font-family:serif;font-size:14px;font-weight:700;color:#FDF6E3">' + d.title + '</div><div style="color:#C0392B;font-size:10px;margin:3px 0">' + d.year + ' · ' + d.era + '</div><div style="color:rgba(212,175,55,0.6);font-size:10px">GEO ' + d.place + '</div>';
+          if (p.name && provinceCenters[p.name]) return '<div style="font-size:12px;color:#FDF6E3">' + p.name + '：<strong style="color:#D4AF37">' + (p.value ? p.value[2] : 0) + '</strong> 个坐标</div>';
+        }
+        if (p.seriesType === 'map') return '<div style="font-size:12px;color:#FDF6E3">' + p.name + '：<strong style="color:#D4AF37">' + (p.value || 0) + '</strong> 个红色坐标</div>';
+        return '';
+      }
+    },
+    geo: {
+      map: 'China', roam: true, zoom: 1.2, center: [105, 36],
+      itemStyle: { areaColor: '#1A0A00', borderColor: 'rgba(139,0,0,0.3)', borderWidth: 1 },
+      emphasis: { itemStyle: { areaColor: 'rgba(192,57,43,0.25)', borderColor: '#C0392B', borderWidth: 1.5 }, label: { show: false } },
+      select: { disabled: true },
+      silent: mapView === 'heatmap',
+    },
+    series: series,
+    animation: true,
+  };
+}
+
+function initMap() {
+  mapChart = echarts.init(document.getElementById('chart'));
+  fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
+    .then(function(r) { return r.json(); })
+    .then(function(geo) {
+      console.log('地图数据加载成功，features数量:', geo.features ? geo.features.length : '无');
+      // 处理省份名称，去掉"省"、"市"、"自治区"等后缀
+      if (geo.features) {
+        geo.features.forEach(function(f) {
+          if (f.properties && f.properties.name) {
+            var name = f.properties.name;
+            name = name.replace(/省$|市$|自治区$|壮族$|回族$|维吾尔$|特别行政区$/g, '');
+            f.properties.name = name;
+          }
+        });
+      }
+      echarts.registerMap('China', geo);
+      console.log('地图注册完成');
+      mapChart.setOption(buildMapOption());
+      mapChart.on('click', function(params) {
+        var d = redData.find(function(x) { return x.name === params.name; });
+        if (d) mapOpenInfo(d);
+      });
+    })
+    .catch(function() {
+      mapChart.setOption({
+        backgroundColor: '#0D0500',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(26,10,0,0.96)', borderColor: 'rgba(192,57,43,0.5)', textStyle: { color: '#FDF6E3', fontFamily: 'Noto Sans SC' } },
+        xAxis: { type: 'value', min: 73, max: 135, axisLine: { lineStyle: { color: 'rgba(139,0,0,0.2)' } }, axisLabel: { color: 'rgba(253,246,227,0.2)', fontSize: 9 }, splitLine: { lineStyle: { color: 'rgba(139,0,0,0.06)' } } },
+        yAxis: { type: 'value', min: 18, max: 54, axisLine: { lineStyle: { color: 'rgba(139,0,0,0.2)' } }, axisLabel: { color: 'rgba(253,246,227,0.2)', fontSize: 9 }, splitLine: { lineStyle: { color: 'rgba(139,0,0,0.06)' } } },
+        series: [{ type: 'effectScatter', data: mapGetFiltered().map(function(d) { return { name: d.name, value: [d.lng, d.lat], itemStyle: { color: colorMap[d.color] } }; }), symbolSize: 11, showEffectOn: 'render', rippleEffect: { brushType: 'stroke', scale: 4 }, itemStyle: { shadowBlur: 8, shadowColor: 'rgba(192,57,43,0.4)' } }],
+      });
+      mapChart.on('click', function(params) {
+        var d = redData.find(function(x) { return x.name === params.name; });
+        if (d) mapOpenInfo(d);
+      });
+    });
+  mapChart.on('click', function(params) {
+    var d = redData.find(function(x) { return x.name === params.name; });
+    if (d) mapOpenInfo(d);
+  });
+  window.addEventListener('resize', function() { if (mapChart) mapChart.resize(); });
+}
+
+function mapUpdate() {
+  if (!mapChart) return;
+  mapChart.setOption(buildMapOption(), { notMerge: false });
+  mapUpdateStats();
+  mapBuildProvinceList();
+}
+
+function mapUpdateStats() {
+  var fd = mapGetFiltered();
+  var provs = new Set(fd.map(function(d) { return d.province; }));
+  document.getElementById('mPlaces').textContent = fd.length;
+  document.getElementById('mProvinces').textContent = provs.size;
+  document.getElementById('mBases').textContent = fd.filter(function(d) { return d.type === '根据地'; }).length;
+}
+
+function mapBuildProvinceList() {
+  var heat = {};
+  mapGetFiltered().forEach(function(d) { heat[d.province] = (heat[d.province] || 0) + 1; });
+  var sorted = Object.entries(heat).sort(function(a, b) { return b[1] - a[1]; });
+  var el = document.getElementById('provinceList');
+  if (sorted.length === 0) {
+    el.innerHTML = '<div style="padding:20px 14px;text-align:center;color:rgba(253,246,227,0.2);font-size:11px;letter-spacing:2px">暂无数据</div>';
+    return;
+  }
+  el.innerHTML = sorted.map(function(e) {
+    return '<div class="province-item" onclick="mapShowProvince(\'' + e[0] + '\')"><span class="province-name">' + e[0] + '</span><span class="province-count">' + e[1] + '</span></div>';
+  }).join('');
+}
+
+function mapShowProvince(name) {
+  // Toggle off if same province clicked again
+  if (mapSelectedProvince === name) {
+    mapClearProvince();
+    return;
+  }
+  mapSelectedProvince = name;
+  var items = redData.filter(function(d) { return d.province === name; });
+  if (!items.length) return;
+  document.querySelectorAll('.province-item').forEach(function(e) { e.classList.remove('active'); });
+  var target = Array.from(document.querySelectorAll('.province-item')).find(function(e) { return e.querySelector('.province-name').textContent === name; });
+  if (target) target.classList.add('active');
+  var existing = document.getElementById('provinceDetail');
+  if (existing) existing.remove();
+  var detail = document.createElement('div');
+  detail.id = 'provinceDetail';
+  detail.className = 'province-detail';
+  detail.innerHTML = '<div class="province-detail-header"><span>' + name + '</span><span class="province-detail-clear" onclick="mapClearProvince()">清除</span></div><div class="province-detail-sub">共 ' + items.length + ' 个红色坐标</div>' +
+    items.map(function(d) {
+      return '<div class="nearby-item" onclick="mapOpenInfo(redData.find(function(x){return x.id===' + d.id + '}));"><div class="nearby-dot" style="background:' + (colorMap[d.color] || '#C03922B') + '"></div><div class="nearby-name">' + d.name + '</div><div class="nearby-year">' + d.year + '</div></div>';
+    }).join('');
+  document.getElementById('provinceList').after(detail);
+  // Update map and stats
+  mapUpdate();
+  // Add "filtered" indicator
+  document.getElementById('map-filter-indicator') || (function() {
+    var ind = document.createElement('div');
+    ind.id = 'map-filter-indicator';
+    ind.style.cssText = 'position:absolute;top:10px;right:10px;background:rgba(192,57,43,0.9);color:#FDF6E3;font-size:11px;padding:4px 10px;border-radius:10px;letter-spacing:1px;z-index:10';
+    ind.textContent = name + ' ' + items.length + '个';
+    document.querySelector('.map-view').appendChild(ind);
+  })();
+  var indicator = document.getElementById('map-filter-indicator');
+  if (indicator) indicator.textContent = name + ' ' + items.length + '个';
+}
+
+function mapClearProvince() {
+  mapSelectedProvince = null;
+  document.querySelectorAll('.province-item').forEach(function(e) { e.classList.remove('active'); });
+  var existing = document.getElementById('provinceDetail');
+  if (existing) existing.remove();
+  var indicator = document.getElementById('map-filter-indicator');
+  if (indicator) indicator.remove();
+  mapUpdate();
+}
+
+function mapOpenInfo(d) {
+  if (!d) return;
+  var nearby = redData.filter(function(x) { return x.id !== d.id; }).map(function(x) { return Object.assign({}, x, { dist: Math.hypot(x.lat - d.lat, x.lng - d.lng) }); }).sort(function(a, b) { return a.dist - b.dist; }).slice(0, 5);
+  document.getElementById('mapInfoContent').innerHTML =
+    '<div class="info-body"><div class="info-year">' + d.year + '年 · ' + d.era + '</div><div class="info-place">GEO ' + d.place + '</div><div class="info-title">' + d.title + '</div><div class="info-divider"></div><div class="info-desc">' + d.desc + '</div>' +
+    (d.quote ? '<div class="info-quote">"' + d.quote + '"</div>' : '') +
+    '<div class="info-tags"><span class="info-tag r">' + d.era + '</span><span class="info-tag g">' + d.type + '</span><span class="info-tag b">' + d.province + '</span></div></div>' +
+    '<div class="info-nearby-header">附近其他地点</div>' +
+    nearby.map(function(n) {
+      return '<div class="nearby-item" onclick="mapOpenInfo(redData.find(function(x){return x.id===' + n.id + '}));"><div class="nearby-dot" style="background:' + (colorMap[n.color] || '#C0392B') + '"></div><div class="nearby-name">' + n.name + '</div><div class="nearby-year">' + n.year + '</div></div>';
+    }).join('');
+  document.getElementById('mapInfoPanel').classList.add('open');
+}
+
+function mapCloseInfo() {
+  document.getElementById('mapInfoPanel').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+renderTimeline();
+updateGlobalStats();
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeDetail(); mapCloseInfo(); closeFigureDetail(); closeTodayPanel(); }
+});
+
+// ══ FIGURES VIEW ══
+let figCat = 'all';
+
+function figFilter(btn, cat) {
+  document.querySelectorAll('[data-figfilter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  figCat = cat;
+  renderFigures();
+}
+
+function renderFigures() {
+  var data = figCat === 'all' ? figuresData : figuresData.filter(function(f) { return f.category === figCat; });
+  var grid = document.getElementById('figuresGrid');
+  grid.innerHTML = data.map(function(f) {
+    var evs = f.events.slice(-3).map(function(e) {
+      return '<div class="figure-event-item"><span class="figure-event-year">' + e.year + '</span><span class="figure-event-text">' + e.text + '</span></div>';
+    }).join('');
+    var tags = f.tags.map(function(t) { return '<span class="figure-tags">' + t + '</span>'; }).join('');
+    return '<div class="figure-card" onclick="openFigureDetail(\'' + f.id + '\')">' +
+      '<div class="figure-card-header">' +
+        '<div class="figure-avatar">' + f.avatar + '</div>' +
+        '<div class="figure-info">' +
+          '<div class="figure-name">' + f.name + '</div>' +
+          '<div class="figure-years">' + f.years + '年</div>' +
+        '</div>' + tags +
+      '</div>' +
+      '<div class="figure-card-body">' +
+        '<div class="figure-brief">' + f.brief + '</div>' +
+        '<div class="figure-events-label">生平足迹</div>' +
+        '<div class="figure-event-list">' + evs + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openFigureDetail(id) {
+  var f = figuresData.find(function(x) { return x.id === id; });
+  if (!f) return;
+  var evs = f.events.map(function(e) {
+    return '<div class="figure-tl-item">' +
+      '<div class="figure-tl-dot"></div>' +
+      '<div><div class="figure-tl-year">' + e.year + '年</div><div class="figure-tl-text">' + e.text + '</div></div>' +
+    '</div>';
+  }).join('');
+  var tags = f.tags.map(function(t) { return '<span class="figure-detail-tag">' + t + '</span>'; }).join('');
+  document.getElementById('figureDetailContent').innerHTML =
+    '<div class="figure-detail-back" onclick="closeFigureDetail()">← 返回人物</div>' +
+    '<div class="figure-detail-hero">' +
+      '<div class="figure-detail-avatar">' + f.avatar + '</div>' +
+      '<div>' +
+        '<div class="figure-detail-name">' + f.name + '</div>' +
+        '<div class="figure-detail-meta">' + f.years + '年</div>' +
+        '<div class="figure-detail-tags">' + tags + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="figure-detail-section-title">人物简介</div>' +
+    '<div style="font-size:13px;color:rgba(253,246,227,0.65);line-height:1.8">' + f.brief + '</div>' +
+    '<div class="figure-detail-section-title">生平年谱</div>' +
+    '<div class="figure-timeline-list">' + evs + '</div>';
+  document.getElementById('figureDetailOverlay').classList.add('open');
+}
+
+function closeFigureDetail() {
+  document.getElementById('figureDetailOverlay').classList.remove('open');
+}
+
+// ══ TODAY PANEL ══
+var todayPanelTimer = null;
+var todayPanelPinned = false;
+var todayCountdownSec = 10;
+
+function openTodayPanel() {
+  var evs = todayEvents;
+  var list = document.getElementById('todayEventsList');
+  if (!evs.length) {
+    list.innerHTML = '<div class="today-panel-empty">暂无记录</div>';
+  } else {
+    list.innerHTML = evs.map(function(e) {
+      return '<div class="today-ev-item">' +
+        '<div class="today-ev-dot"></div>' +
+        '<div>' +
+          '<div class="today-ev-year">' + e.year + '年 · ' + e.era + '</div>' +
+          '<div class="today-ev-title">' + e.title + '</div>' +
+          '<div class="today-ev-desc">' + e.desc + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('todayPanel').classList.add('open');
+  todayPanelPinned = false;
+  todayCountdownSec = 10;
+  var hint = document.getElementById('todayPanelHint');
+  if (hint) { hint.classList.remove('dismissed'); hint.querySelector('.today-panel-hint-text').textContent = '点击任意处继续阅读 · 10秒后自动收起'; }
+  if (todayPanelTimer) clearInterval(todayPanelTimer);
+  todayPanelTimer = setInterval(function() {
+    if (todayPanelPinned) { clearInterval(todayPanelTimer); return; }
+    todayCountdownSec--;
+    var hint = document.getElementById('todayPanelHint');
+    if (hint) {
+      if (todayCountdownSec <= 0) {
+        clearInterval(todayPanelTimer);
+        closeTodayPanel();
+      } else {
+        hint.querySelector('.today-panel-hint-text').textContent = '点击任意处继续阅读 · ' + todayCountdownSec + '秒后自动收起';
+      }
+    }
+  }, 1000);
+}
+
+function closeTodayPanel() {
+  var panel = document.getElementById('todayPanel');
+  panel.classList.remove('open');
+  // Force clean transform after transition
+  setTimeout(function(){ if(!panel.classList.contains('open')){panel.style.transform='translateY(100%)';} },400);
+  if (todayPanelTimer) { clearInterval(todayPanelTimer); todayPanelTimer = null; }
+  todayPanelPinned = false;
+  var hint = document.getElementById('todayPanelHint');
+  if (hint) hint.classList.add('dismissed');
+}
+
+function pinTodayPanel() {
+  todayPanelPinned = true;
+  var hint = document.getElementById('todayPanelHint');
+  if (hint) {
+    hint.classList.add('dismissed');
+  }
+}
+
+function updateTodayBadge() {
+  var evs = todayEvents;
+  if (!evs.length) {
+    document.getElementById('todayBadgeTitle').textContent = '今日无记录';
+    document.getElementById('todayBadgeYear').textContent = '';
+    return;
+  }
+  var top = evs[0];
+  document.getElementById('todayBadgeTitle').textContent = top.title;
+  document.getElementById('todayBadgeYear').textContent = top.year + ' · ' + top.era;
+}
+
+// ══ TODAY PANEL: click anywhere to pin ══
+document.getElementById('todayPanel').addEventListener('click',function(e){
+  if(!todayPanelPinned){
+    todayCountdownSec=10; // reset countdown on any interaction
+  }
+});
+
+// ══ INIT ══
+(function() {
+  updateTodayBadge();
+  renderFigures();
+})();
+
+</script>
+</body>
+</html>
