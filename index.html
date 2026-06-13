@@ -1868,7 +1868,7 @@ function buildMapOption() {
 
 function initMap() {
   mapChart = echarts.init(document.getElementById('chart'));
-  fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
+  fetch('https://cdn.jsdelivr.net/npm/@jiaminghi/china-map-geo@1.0.0/china.json')
     .then(function(r) { return r.json(); })
     .then(function(geo) {
       console.log('地图数据加载成功，features数量:', geo.features ? geo.features.length : '无');
